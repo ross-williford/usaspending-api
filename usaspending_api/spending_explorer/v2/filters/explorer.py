@@ -1,8 +1,8 @@
-from django.db.models import F, Sum, Value, CharField, Q, Case, When
+from django.db.models import F, Sum, Value, CharField, Q, Case, When, Subquery, OuterRef
 from decimal import Decimal
 from usaspending_api.references.models import Agency
 from usaspending_api.references.constants import DOD_ARMED_FORCES_CGAC, DOD_CGAC
-
+from usaspending_api.accounts.models import TreasuryAppropriationAccount
 
 class Explorer(object):
     def __init__(self, alt_set, queryset):
@@ -47,12 +47,17 @@ class Explorer(object):
 
     def federal_account(self):
         # Federal Account Queryset
+        name_subquery = (
+            TreasuryAppropriationAccount.objects.filter(federal_account=OuterRef("id"))
+                .values("account_title")
+                .order_by(F("beginning_period_of_availability").desc(nulls_last=True))
+        )
         queryset = (
             self.queryset.annotate(
                 id=F("treasury_account__federal_account"),
                 account_number=F("treasury_account__federal_account__federal_account_code"),
                 type=Value("federal_account", output_field=CharField()),
-                name=F("treasury_account__federal_account__account_title"),
+                name=Subquery(name_subquery.values("account_title")[:1]),
                 code=F("treasury_account__federal_account__main_account_code"),
             )
             .values("id", "account_number", "type", "name", "code", "amount")
