@@ -1432,7 +1432,7 @@ query_paths = {
                 ("budget_function", "treasury_account_identifier__budget_function_title"),
                 ("budget_subfunction", "treasury_account_identifier__budget_subfunction_title"),
                 ("federal_account_symbol", "federal_account_symbol"),  # Column is appended to in account_download.py
-                ("federal_account_name", "treasury_account_identifier__federal_account__account_title"),
+                ("federal_account_name", "federal_account_name"),  # Column is appended to in account_download.py
                 (
                     "budget_authority_unobligated_balance_brought_forward",
                     "budget_authority_unobligated_balance_brought_forward_fyb",
@@ -1463,7 +1463,7 @@ query_paths = {
         "federal_account": OrderedDict(
             [
                 ("federal_account_symbol", "federal_account_symbol"),  # Column is appended to in account_download.py
-                ("federal_account_name", "treasury_account_identifier__federal_account__account_title"),
+                ("federal_account_name", "federal_account_name"),  # Column is appended to in account_download.py
                 ("agency_name", "agency_name"),  # Column is appended to in account_download.py
                 ("budget_function", "treasury_account_identifier__budget_function_title"),
                 ("budget_subfunction", "treasury_account_identifier__budget_subfunction_title"),
@@ -1515,7 +1515,7 @@ query_paths = {
                 ("budget_function", "treasury_account__budget_function_title"),
                 ("budget_subfunction", "treasury_account__budget_subfunction_title"),
                 ("federal_account_symbol", "federal_account_symbol"),  # Column is appended to in account_download.py
-                ("federal_account_name", "treasury_account__federal_account__account_title"),
+                ("federal_account_name", "federal_account_name"),  # Column is appended to in account_download.py
                 ("program_activity_code", "program_activity__program_activity_code"),
                 ("program_activity_name", "program_activity__program_activity_name"),
                 ("object_class_code", "object_class__object_class"),
@@ -1532,7 +1532,7 @@ query_paths = {
         "federal_account": OrderedDict(
             [
                 ("federal_account_symbol", "federal_account_symbol"),  # Column is appended to in account_download.py
-                ("federal_account_name", "treasury_account__federal_account__account_title"),
+                ("federal_account_name", "federal_account_name"),  # Column is appended to in account_download.py
                 ("agency_name", "agency_name"),  # Column is appended to in account_download.py
                 ("budget_function", "treasury_account__budget_function_title"),
                 ("budget_subfunction", "treasury_account__budget_subfunction_title"),
@@ -1572,7 +1572,7 @@ query_paths = {
                 ("budget_function", "treasury_account__budget_function_title"),
                 ("budget_subfunction", "treasury_account__budget_subfunction_title"),
                 ("federal_account_symbol", "federal_account_symbol"),  # Column is appended to in account_download.py
-                ("federal_account_name", "treasury_account__federal_account__account_title"),
+                ("federal_account_name", "federal_account_name"),  # Column is appended to in account_download.py
                 ("program_activity_code", "program_activity__program_activity_code"),
                 ("program_activity_name", "program_activity__program_activity_name"),
                 ("object_class_code", "object_class__object_class"),
@@ -1620,7 +1620,7 @@ query_paths = {
             [
                 ("submission_period", "reporting_period_end"),
                 ("federal_account_symbol", "federal_account_symbol"),  # Column is appended to in account_download.py
-                ("federal_account_name", "treasury_account__federal_account__account_title"),
+                ("federal_account_name", "federal_account_title"), # Column is appended to in account_download.py
                 ("agency_name", "agency_name"),  # Column is appended to in account_download.py
                 ("budget_function", "treasury_account__budget_function_title"),
                 ("budget_subfunction", "treasury_account__budget_subfunction_title"),

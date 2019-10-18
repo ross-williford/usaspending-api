@@ -1,10 +1,10 @@
 import datetime
 
-from django.db.models import Case, CharField, OuterRef, Subquery, Sum, Value, When
+from django.db.models import Case, CharField, OuterRef, Subquery, Sum, Value, When, F
 from django.db.models.functions import Concat, Coalesce
 
 from usaspending_api.accounts.helpers import start_and_end_dates_from_fyq
-from usaspending_api.accounts.models import FederalAccount
+from usaspending_api.accounts.models import FederalAccount, TreasuryAppropriationAccount
 from usaspending_api.awards.v2.lookups.lookups import contract_type_mapping
 from usaspending_api.common.exceptions import InvalidParameterException
 from usaspending_api.download.v2.download_column_historical_lookups import query_paths
@@ -135,6 +135,11 @@ def get_account_aid_toptier_agency_name_annotation(tas_id):
         Subquery(ta.filter(cgac_code=OuterRef("{}__fr_entity_code".format(tas_id))).values("name")[:1]),
     )
 
+def get_account_title_annotation(tas_id):
+    title = Subquery(TreasuryAppropriationAccount.objects.filter(treasury_account_identifier=OuterRef(tas_id))
+                     .order_by(F("beginning_period_of_availability").desc(nulls_last=True)).values("account_title")[:1])
+    return title
+
 
 def generate_treasury_account_query(queryset, account_type, tas_id):
     """ Derive necessary fields for a treasury account-grouped query """
@@ -201,6 +206,7 @@ def generate_federal_account_query(queryset, account_type, tas_id):
         ),
         # agency_name: name of the ToptierAgency associated with this federal account
         "agency_name": get_account_aid_toptier_agency_name_annotation(tas_id),
+        "federal_account_name": get_account_title_annotation(tas_id),
     }
 
     # Derive recipient_parent_name for award_financial downloads
@@ -239,7 +245,6 @@ def generate_federal_account_query(queryset, account_type, tas_id):
         for val in values_dict["federal_account"]
         if val in all_summed_cols
     }
-
     return queryset.annotate(**summed_cols)
 
 

@@ -433,6 +433,11 @@ class FederalAccountViewSet(APIView):
 
     @cache_response()
     def get(self, request, fed_acct_code, format=None):
+        federal_account_name = (
+            TreasuryAppropriationAccount.objects.filter(federal_account__federal_account_code=fed_acct_code)
+            .values("account_title", "beginning_period_of_availability")
+            .order_by(F("beginning_period_of_availability").desc(nulls_last=True))
+        )
         federal_account = FederalAccount.objects.filter(federal_account_code=fed_acct_code).values(
             "id", "agency_identifier", "main_account_code", "account_title", "federal_account_code"
         )
@@ -440,6 +445,7 @@ class FederalAccountViewSet(APIView):
         if not federal_account:
             raise InvalidParameterException("Federal Account with code {} does not exist.".format(fed_acct_code))
 
+        federal_account[0]["account_title"] = federal_account_name[0]["account_title"]
         return Response(federal_account[0])
 
 
@@ -512,6 +518,11 @@ class FederalAccountsViewSet(APIView):
         upper_limit = page * limit
 
         agency_subquery = ToptierAgency.objects.filter(cgac_code=OuterRef("corrected_agency_identifier"))
+        account_name_subquery = (
+            TreasuryAppropriationAccount.objects.filter(federal_account=OuterRef("id"))
+            .values("account_title")
+            .order_by(F("beginning_period_of_availability").desc(nulls_last=True))
+        )
         queryset = (
             FederalAccount.objects.filter(
                 treasuryappropriationaccount__account_balances__final_of_fy=True,
@@ -520,7 +531,7 @@ class FederalAccountsViewSet(APIView):
             .annotate(corrected_agency_identifier=Func(F("agency_identifier"), function="CORRECTED_CGAC"))
             .annotate(
                 account_id=F("id"),
-                account_name=F("account_title"),
+                account_name=Subquery(account_name_subquery.values("account_title")[:1]),
                 account_number=F("federal_account_code"),
                 budgetary_resources=Sum(
                     "treasuryappropriationaccount__account_balances__total_budgetary_resources_amount_cpe"
