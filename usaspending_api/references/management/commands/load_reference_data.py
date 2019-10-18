@@ -27,9 +27,9 @@ class Command(BaseCommand):
         # TAS's should only be loaded after agencies to ensure they can properly link to agencies
         self.logger.info("Loading tas_list.csv")
         if settings.IS_LOCAL:
-            call_command("loadtas", "usaspending_api/data/tas_list.csv")
+            call_command("load_tas", "usaspending_api/data/tas_list.csv")
         else:
-            call_command("loadtas", "gtas-sf133")
+            call_command("load_tas", "gtas-sf133")
 
         self.logger.info("Loading program_activity.csv")
         if settings.IS_LOCAL:

@@ -1620,7 +1620,7 @@ query_paths = {
             [
                 ("submission_period", "reporting_period_end"),
                 ("federal_account_symbol", "federal_account_symbol"),  # Column is appended to in account_download.py
-                ("federal_account_name", "federal_account_title"), # Column is appended to in account_download.py
+                ("federal_account_name", "federal_account_title"),  # Column is appended to in account_download.py
                 ("agency_name", "agency_name"),  # Column is appended to in account_download.py
                 ("budget_function", "treasury_account__budget_function_title"),
                 ("budget_subfunction", "treasury_account__budget_subfunction_title"),

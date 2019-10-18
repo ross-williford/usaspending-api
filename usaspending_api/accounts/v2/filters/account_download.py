@@ -135,9 +135,15 @@ def get_account_aid_toptier_agency_name_annotation(tas_id):
         Subquery(ta.filter(toptier_code=OuterRef("{}__fr_entity_code".format(tas_id))).values("name")[:1]),
     )
 
-def get_account_title_annotation(tas_id):
-    title = Subquery(TreasuryAppropriationAccount.objects.filter(treasury_account_identifier=OuterRef(tas_id))
-                     .order_by(F("beginning_period_of_availability").desc(nulls_last=True)).values("account_title")[:1])
+
+def get_account_title_annotation():
+    title = Subquery(
+        TreasuryAppropriationAccount.objects.filter(
+            federal_account__federal_account_code=OuterRef("federal_account_symbol")
+        )
+        .values("account_title")
+        .order_by(F("beginning_period_of_availability").desc(nulls_last=True))[:1]
+    )
     return title
 
 
@@ -188,6 +194,7 @@ def generate_treasury_account_query(queryset, account_type, tas_id):
             Value("-"),
             "{}__federal_account__main_account_code".format(tas_id),
         ),
+        "federal_account_name": get_account_title_annotation(),
     }
 
     # Derive recipient_parent_name
@@ -208,7 +215,7 @@ def generate_federal_account_query(queryset, account_type, tas_id):
         ),
         # agency_name: name of the ToptierAgency associated with this federal account
         "agency_name": get_account_aid_toptier_agency_name_annotation(tas_id),
-        "federal_account_name": get_account_title_annotation(tas_id),
+        "federal_account_name": get_account_title_annotation(),
     }
 
     # Derive recipient_parent_name for award_financial downloads
