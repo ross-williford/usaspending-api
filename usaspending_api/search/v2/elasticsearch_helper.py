@@ -278,7 +278,9 @@ def base_awards_query(filters, is_for_transactions=False):
                     z = v
                 queries.append({"query_string": {"query": z}})
 
-            query["bool"]["filter"]["bool"]["should"] = query["bool"]["filter"]["bool"]["should"] + [{"dis_max": {"queries": queries}}]
+            query["bool"]["filter"]["bool"]["should"] = query["bool"]["filter"]["bool"]["should"] + [
+                {"dis_max": {"queries": queries}}
+            ]
 
         elif key == "time_period":
             should = []
@@ -304,8 +306,7 @@ def base_awards_query(filters, is_for_transactions=False):
             query["bool"]["filter"]["bool"].update(
                 {
                     "should": query["bool"]["filter"]["bool"]["should"] + should,
-                    "minimum_should_match": int(query["bool"]["filter"]["bool"].get("minimum_should_match") or 0)
-                                            + 1,
+                    "minimum_should_match": int(query["bool"]["filter"]["bool"].get("minimum_should_match") or 0) + 1,
                 }
             )
 

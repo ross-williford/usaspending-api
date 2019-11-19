@@ -60,10 +60,10 @@ SELECT
   UTM.funding_toptier_agency_name,
   UTM.awarding_subtier_agency_name,
   UTM.funding_subtier_agency_name,
-  UTM.awarding_toptier_agency_code,
-  UTM.funding_toptier_agency_code,
-  UTM.awarding_subtier_agency_code,
-  UTM.funding_subtier_agency_code,
+  TAA.toptier_code AS awarding_toptier_agency_code,
+  TFA.toptier_code AS funding_toptier_agency_code,
+  SAA.subtier_code AS awarding_subtier_agency_code,
+  SFA.subtier_code AS funding_subtier_agency_code,
   UTM.awarding_toptier_agency_abbreviation,
   UTM.funding_toptier_agency_abbreviation,
   UTM.awarding_subtier_agency_abbreviation,
@@ -104,4 +104,11 @@ FROM universal_transaction_matview UTM
 JOIN transaction_normalized TM ON (UTM.transaction_id = TM.id)
 LEFT JOIN transaction_fpds FPDS ON (UTM.transaction_id = FPDS.transaction_id)
 LEFT JOIN transaction_fabs FABS ON (UTM.transaction_id = FABS.transaction_id)
-LEFT OUTER JOIN awards AWD ON (UTM.award_id = AWD.id);
+LEFT OUTER JOIN awards AWD ON (UTM.award_id = AWD.id)
+-- these joins should be removed once moving away from proof of concept with ES Advanced Search
+LEFT OUTER JOIN agency AA ON (TM.awarding_agency_id = AA.id)
+LEFT OUTER JOIN agency FA ON (TM.funding_agency_id = FA.id)
+LEFT OUTER JOIN toptier_agency TAA ON (AA.toptier_agency_id = TAA.toptier_agency_id)
+LEFT OUTER JOIN subtier_agency SAA ON (AA.subtier_agency_id = SAA.subtier_agency_id)
+LEFT OUTER JOIN toptier_agency TFA ON (FA.toptier_agency_id = TFA.toptier_agency_id)
+LEFT OUTER JOIN subtier_agency SFA ON (FA.subtier_agency_id = SFA.subtier_agency_id);
