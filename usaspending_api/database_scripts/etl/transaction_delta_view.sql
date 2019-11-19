@@ -39,6 +39,7 @@ SELECT
 
   AWD.date_signed,
   UTM.action_date,
+  DATE(UTM.action_date + interval '3 months') as fiscal_date,
   extract(month from UTM.action_date::date + interval '3 months') as fiscal_month,
   extract(quarter from UTM.action_date::date + interval '3 months') as fiscal_quarter,
   extract(year from UTM.action_date::date + interval '3 months') as fiscal_year,
@@ -59,6 +60,10 @@ SELECT
   UTM.funding_toptier_agency_name,
   UTM.awarding_subtier_agency_name,
   UTM.funding_subtier_agency_name,
+  UTM.awarding_toptier_agency_code,
+  UTM.funding_toptier_agency_code,
+  UTM.awarding_subtier_agency_code,
+  UTM.funding_subtier_agency_code,
   UTM.awarding_toptier_agency_abbreviation,
   UTM.funding_toptier_agency_abbreviation,
   UTM.awarding_subtier_agency_abbreviation,
@@ -90,7 +95,9 @@ SELECT
   UTM.recipient_location_zip5,
   UTM.recipient_location_congressional_code,
   UTM.recipient_location_city_name,
-  UTM.treasury_account_identifiers
+  UTM.treasury_account_identifiers,
+
+  UTM.business_categories
 
 
 FROM universal_transaction_matview UTM

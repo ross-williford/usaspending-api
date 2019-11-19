@@ -232,7 +232,7 @@ def concat_if_array(data):
             return ""
 
 
-def base_awards_query(filters):
+def base_awards_query(filters, is_for_transactions=False):
     query = {"bool": {"filter": {"bool": {"should": []}}}}
     for key, value in filters.items():
         if value is None:
@@ -282,13 +282,14 @@ def base_awards_query(filters):
 
         elif key == "time_period":
             should = []
+            lte_date_type = "action_date" if is_for_transactions else "date_signed"
             for v in value:
                 should.append(
                     {
                         "bool": {
                             "should": [
                                 {"range": {"action_date": {"gte": v["start_date"]}}},
-                                {"range": {"date_signed": {"lte": v["end_date"]}}},
+                                {"range": {lte_date_type: {"lte": v["end_date"]}}},
                             ],
                             "minimum_should_match": 2,
                         }
@@ -428,10 +429,11 @@ def base_awards_query(filters):
 
         elif key == "award_amounts":
             should = []
+            obligation_term = "award_amount" if is_for_transactions else "total_obligation"
             for v in value:
                 lte = v.get("upper_bound")
                 gte = v.get("lower_bound")
-                should.append({"range": {"total_obligation": {"gte": gte, "lt": lte}}})
+                should.append({"range": {obligation_term: {"gte": gte, "lt": lte}}})
             query["bool"]["filter"]["bool"].update(
                 {
                     "should": query["bool"]["filter"]["bool"]["should"] + should,
@@ -614,6 +616,10 @@ def elastic_awards_count(request_data):
 
 
 def elasticsearch_dollar_sum_aggregation(column_to_sum):
+    """
+    column_to_sum: name of the column to sum
+    :return: the elasticsearch aggregation to get both the cents and dollars for a sum
+    """
     return {
         "sum_as_cents": {
             "sum": {"script": {"lang": "painless", "source": "doc['{}'].value * 100".format(column_to_sum)}}
