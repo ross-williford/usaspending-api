@@ -501,7 +501,7 @@ def base_awards_query(filters):
         elif key == "set_aside_type_codes":
             should = []
             for v in value:
-                should.append({"match": {"product_or_service_code.keyword": v}})
+                should.append({"match": {"type_set_aside.keyword": v}})
             query["bool"]["filter"]["bool"].update(
                 {
                     "should": query["bool"]["filter"]["bool"]["should"] + should,
@@ -512,7 +512,7 @@ def base_awards_query(filters):
         elif key == "extent_competed_type_codes":
             should = []
             for v in value:
-                should.append({"match": {"extent_completed.keyword": v}})
+                should.append({"match": {"extent_competed.keyword": v}})
             query["bool"]["filter"]["bool"].update(
                 {
                     "should": query["bool"]["filter"]["bool"]["should"] + should,
