@@ -82,7 +82,7 @@ AGENCY_DOWNLOAD_URL = "https://files{}.usaspending.gov/reference_data/agency_cod
 ES_HOSTNAME = ""
 if not ES_HOSTNAME:
     ES_HOSTNAME = os.environ.get("ES_HOSTNAME")
-AWARDS_INDEX_ROOT = os.environ.get("ES_AWD_ROOT") or "future-awards"
+AWARDS_INDEX_ROOT = os.environ.get("ES_AWD_ROOT") or "award-query"
 ES_AWARDS_ETL_VIEW_NAME = "award_delta_view"
 ES_AWARDS_MAX_RESULT_WINDOW = 50000
 ES_AWARDS_NAME_SUFFIX = "awards"
