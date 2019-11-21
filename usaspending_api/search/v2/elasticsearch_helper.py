@@ -278,7 +278,12 @@ def base_awards_query(filters, is_for_transactions=False):
                     z = v
                 queries.append({"query_string": {"query": z}})
 
-            query["bool"]["filter"]["bool"]["should"] = query["bool"]["filter"]["bool"]["should"] + [{"dis_max": {"queries": queries}}]
+            query["bool"]["filter"]["bool"].update(
+                {
+                    "should": query["bool"]["filter"]["bool"]["should"] + [{"dis_max": {"queries": queries}}],
+                    "minimum_should_match": int(query["bool"]["filter"]["bool"].get("minimum_should_match") or 0) + 1,
+                }
+            )
 
         elif key == "time_period":
             should = []
@@ -304,8 +309,7 @@ def base_awards_query(filters, is_for_transactions=False):
             query["bool"]["filter"]["bool"].update(
                 {
                     "should": query["bool"]["filter"]["bool"]["should"] + should,
-                    "minimum_should_match": int(query["bool"]["filter"]["bool"].get("minimum_should_match") or 0)
-                                            + 1,
+                    "minimum_should_match": int(query["bool"]["filter"]["bool"].get("minimum_should_match") or 0) + 1,
                 }
             )
 
@@ -539,7 +543,7 @@ def base_awards_query(filters, is_for_transactions=False):
             )
 
     # i am sorry about this
-    if len(query["bool"]["filter"]["bool"]["should"]) == None:
+    if len(query["bool"]["filter"]["bool"]["should"]) == 0:
         query["bool"]["filter"]["bool"].pop("should")
         if query["bool"]["filter"]["bool"] == {}:
             query["bool"]["filter"].pop("bool")
@@ -601,7 +605,7 @@ def elastic_awards_count(request_data):
     response = {}
     success = True
     for t in types:
-        index_name = "future-awards-{}".format(t)
+        index_name = "award-query-{}".format(t)
         results = es_client_count(index=index_name, body=query, retries=10)
         if t == "directpayments":
             t = "direct_payments"

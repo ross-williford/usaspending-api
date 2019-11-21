@@ -45,6 +45,7 @@ AWARDS_LOOKUP = {
     "Contract Award Type": "type_description",
     "recipient_id": "recipient_id",
     "prime_award_recipient_id": "prime_award_recipient_id",
+    "generated_internal_id": "generated_unique_award_id",
 }
 
 INDEX_ALIASES_TO_AWARD_TYPES = deepcopy(all_award_types_mappings)
