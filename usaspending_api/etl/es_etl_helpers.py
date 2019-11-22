@@ -122,6 +122,7 @@ AWARD_VIEW_COLUMNS = [
     "recipient_name",
     "recipient_unique_id",
     "parent_recipient_unique_id",
+    "recipient_hash",
     "business_categories",
     "update_date",
     "action_date",

@@ -2,17 +2,28 @@ DROP VIEW IF EXISTS award_delta_view;
 
 CREATE VIEW award_delta_view AS
 WITH views AS (
-    SELECT mv_contract_award_search.*, a.generated_unique_award_id, a.update_date FROM mv_contract_award_search INNER JOIN awards a ON a.id = mv_contract_award_search.award_id
+    SELECT mv_contract_award_search.*, a.generated_unique_award_id, a.update_date
+        FROM mv_contract_award_search INNER JOIN awards a ON
+            a.id = mv_contract_award_search.award_id
     UNION
-    SELECT mv_grant_award_search.*, a.generated_unique_award_id, a.update_date FROM mv_grant_award_search INNER JOIN awards a ON a.id = mv_grant_award_search.award_id
+    SELECT mv_grant_award_search.*, a.generated_unique_award_id, a.update_date
+        FROM mv_grant_award_search INNER JOIN awards a ON
+            a.id = mv_grant_award_search.award_id
     UNION
-    SELECT mv_directpayment_award_search.*, a.generated_unique_award_id, a.update_date FROM mv_directpayment_award_search INNER JOIN awards a ON a.id = mv_directpayment_award_search.award_id
+    SELECT mv_directpayment_award_search.*, a.generated_unique_award_id, a.update_date
+        FROM mv_directpayment_award_search INNER JOIN awards a ON
+         a.id = mv_directpayment_award_search.award_id
     UNION
-    SELECT mv_idv_award_search.*, a.generated_unique_award_id, a.update_date FROM mv_idv_award_search INNER JOIN awards a ON a.id = mv_idv_award_search.award_id
+    SELECT mv_idv_award_search.*, a.generated_unique_award_id, a.update_date
+        FROM mv_idv_award_search INNER JOIN awards a ON
+            a.id = mv_idv_award_search.award_id
     UNION
-    SELECT mv_loan_award_search.*, a.generated_unique_award_id, a.update_date FROM mv_loan_award_search INNER JOIN awards a ON a.id = mv_loan_award_search.award_id
+    SELECT mv_loan_award_search.*, a.generated_unique_award_id, a.update_date
+        FROM mv_loan_award_search INNER JOIN awards a ON
+            a.id = mv_loan_award_search.award_id
     UNION
-    SELECT mv_other_award_search.*, a.generated_unique_award_id, a.update_date FROM mv_other_award_search INNER JOIN awards a ON a.id = mv_other_award_search.award_id
+    SELECT mv_other_award_search.*, a.generated_unique_award_id, a.update_date
+        FROM mv_other_award_search INNER JOIN awards a ON a.id = mv_other_award_search.award_id
 )
 SELECT
   views.award_id,
@@ -39,6 +50,7 @@ SELECT
   views.recipient_id,
   views.recipient_name,
   views.recipient_unique_id,
+  recipient_lookup.recipient_hash,
   views.parent_recipient_unique_id,
   views.business_categories,
 
@@ -95,4 +107,11 @@ SELECT
   views.naics_description,
   ARRAY_TO_STRING(views.treasury_account_identifiers, ', ') AS treasury_account_identifiers
   FROM views
+  LEFT JOIN
+  (SELECT
+    recipient_hash,
+    legal_business_name AS recipient_name,
+    duns
+  FROM recipient_lookup AS rlv
+  ) recipient_lookup ON recipient_lookup.duns = views.recipient_unique_id AND views.recipient_unique_id IS NOT NULL
 ORDER BY views.total_obligation DESC NULLS LAST;
