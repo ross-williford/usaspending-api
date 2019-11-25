@@ -121,6 +121,7 @@ def generate_csvs(download_job):
 def get_csv_sources(json_request):
     csv_sources = []
     for download_type in json_request["download_types"]:
+        print(download_type)
         agency_id = json_request["filters"].get("agency", "all")
         filter_function = VALUE_MAPPINGS[download_type]["filter_function"]
         download_type_table = VALUE_MAPPINGS[download_type]["table"]
@@ -136,8 +137,10 @@ def get_csv_sources(json_request):
                 gte_date_type="action_date",
                 lte_date_type="date_signed",
             )
+            # if filters.get("elasticsearch"):
 
             queryset = filter_function(filters)
+            print(queryset.query)
             award_type_codes = set(filters["award_type_codes"])
 
             if award_type_codes & (set(contract_type_mapping.keys()) | set(idv_type_mapping.keys())):

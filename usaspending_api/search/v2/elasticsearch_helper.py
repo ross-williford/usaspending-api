@@ -1,3 +1,4 @@
+import itertools
 import logging
 import re
 
@@ -6,6 +7,7 @@ from django.db.models import Q
 
 from usaspending_api.accounts.helpers import TAS_COMPONENT_TO_FIELD_MAPPING
 from usaspending_api.accounts.models import TreasuryAppropriationAccount
+from usaspending_api.awards.models_matviews import AwardSearchView
 from usaspending_api.awards.v2.lookups.elasticsearch_lookups import KEYWORD_DATATYPE_FIELDS
 from usaspending_api.awards.v2.lookups.elasticsearch_lookups import INDEX_ALIASES_TO_AWARD_TYPES
 from usaspending_api.awards.v2.lookups.elasticsearch_lookups import (
@@ -34,6 +36,7 @@ direct_payment_award_mapping.update({v: k for k, v in direct_payment_award_mappi
 grant_award_mapping.update({v: k for k, v in grant_award_mapping.items()})
 loan_award_mapping.update({v: k for k, v in loan_award_mapping.items()})
 other_award_mapping.update({v: k for k, v in other_award_mapping.items()})
+
 
 def es_sanitize(input_string):
     """ Escapes reserved elasticsearch characters and removes when necessary """
@@ -163,6 +166,44 @@ def spending_by_transaction_sum(filters):
     return get_sum_aggregation_results(keyword)
 
 
+def get_award_download_ids(filters, field, size=10000):
+    """
+    returns a generator that
+    yields list of transaction ids in chunksize SIZE
+
+    Note: this only works for fields in ES of integer type.
+    """
+    index_name = "{}-*".format(settings.AWARDS_INDEX_ROOT)
+    n_iter = DOWNLOAD_QUERY_SIZE // size
+    base = base_awards_query(filters)
+    max_iterations = 10
+    total = es_client_count(index=index_name, body={"query": base}, retries=max_iterations)
+    if total is None:
+        logger.error("Error retrieving total results. Max number of attempts reached")
+        return
+    required_iter = (total["count"] // size) + 1
+    n_iter = min(max(1, required_iter), n_iter)
+    for i in range(n_iter):
+        query = {
+            "_source": [field],
+            "query": base,
+            "aggs": {
+                "results": {
+                    "terms": {"field": field, "include": {"partition": i, "num_partitions": n_iter}, "size": size}
+                }
+            },
+            "size": 0,
+        }
+
+        response = es_client_query(index=index_name, body=query, retries=max_iterations, timeout="3m")
+        if not response:
+            raise Exception("Breaking generator, unable to reach cluster")
+        results = []
+        for result in response["aggregations"]["results"]["buckets"]:
+            results.append(result["key"])
+        yield results
+
+
 def get_download_ids(keyword, field, size=10000):
     """
     returns a generator that
@@ -244,6 +285,7 @@ def concat_if_array(data):
 
 
 def base_awards_query(filters, is_for_transactions=False):
+    print(filters)
     query = {"bool": {"filter": {"bool": {"should": []}}}}
     for key, value in filters.items():
         if value is None:
@@ -658,3 +700,14 @@ def elasticsearch_dollar_sum_aggregation(column_to_sum):
             "bucket_script": {"buckets_path": {"sum_as_cents": "sum_as_cents"}, "script": "params.sum_as_cents / 100"}
         },
     }
+
+
+def elasticsearch_download_query(filters):
+    queryset = AwardSearchView.objects.all()
+    award_ids = get_award_download_ids(filters, "generated_unique_award_id.keyword")
+    # flatten IDs
+    award_ids = list(itertools.chain.from_iterable(award_ids))
+    logger.info("Found {} awards based on filters".format(len(award_ids)))
+    award_ids = [str(award_id) for award_id in award_ids]
+    queryset = queryset.extra(where=['"awards"."generated_unique_award_id" = ANY(array{})'.format(award_ids)])
+    return queryset

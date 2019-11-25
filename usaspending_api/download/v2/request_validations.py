@@ -42,7 +42,11 @@ def validate_award_request(request_data):
         }
         json_request["limit"] = settings.MAX_DOWNLOAD_LIMIT
         return json_request
-
+    if "elasticsearch" in filters:
+        filters.pop("elasticsearch")
+        json_request["filters"] = filters
+        json_request["filters"].update({"award_type_codes": list(award_type_mapping.keys())})
+        return json_request
     # Set defaults of non-required parameters
     json_request["columns"] = request_data.get("columns", [])
     json_request["file_format"] = request_data.get("file_format", "csv")

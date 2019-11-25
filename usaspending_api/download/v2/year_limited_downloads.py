@@ -32,6 +32,9 @@ class YearLimitedDownloadViewSet(BaseDownloadViewSet):
         if keyword_filter and len(filters.keys()) == 1:
             request_data["filters"] = {"elasticsearch_keyword": keyword_filter}
             return
+        elasticsearch = filters.get("elasticsearch")
+        if elasticsearch:
+            return
 
         # Validate other parameters previously required by the Bulk Download endpoint
         for required_param in ["award_types", "agency", "date_type", "date_range"]:
