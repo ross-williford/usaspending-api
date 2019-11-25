@@ -42,10 +42,10 @@ def validate_award_request(request_data):
         }
         json_request["limit"] = settings.MAX_DOWNLOAD_LIMIT
         return json_request
-    if "elasticsearch" in filters:
-        filters.pop("elasticsearch")
+    if "elastic_awards" in request_data["award_levels"]:
         json_request["filters"] = filters
         json_request["filters"].update({"award_type_codes": list(award_type_mapping.keys())})
+        json_request["limit"] = settings.MAX_DOWNLOAD_LIMIT
         return json_request
     # Set defaults of non-required parameters
     json_request["columns"] = request_data.get("columns", [])

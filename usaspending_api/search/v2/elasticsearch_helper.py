@@ -7,7 +7,7 @@ from django.db.models import Q
 
 from usaspending_api.accounts.helpers import TAS_COMPONENT_TO_FIELD_MAPPING
 from usaspending_api.accounts.models import TreasuryAppropriationAccount
-from usaspending_api.awards.models_matviews import AwardSearchView
+from usaspending_api.awards.models_matviews import AwardSearchView, UniversalTransactionView
 from usaspending_api.awards.v2.lookups.elasticsearch_lookups import KEYWORD_DATATYPE_FIELDS
 from usaspending_api.awards.v2.lookups.elasticsearch_lookups import INDEX_ALIASES_TO_AWARD_TYPES
 from usaspending_api.awards.v2.lookups.elasticsearch_lookups import (
@@ -166,16 +166,16 @@ def spending_by_transaction_sum(filters):
     return get_sum_aggregation_results(keyword)
 
 
-def get_award_download_ids(filters, field, size=10000):
+def get_award_download_ids(filters, field, size=10000, awards=True):
     """
     returns a generator that
     yields list of transaction ids in chunksize SIZE
 
     Note: this only works for fields in ES of integer type.
     """
-    index_name = "{}-*".format(settings.AWARDS_INDEX_ROOT)
+    index_name = "{}-*".format(settings.AWARDS_INDEX_ROOT if awards else settings.ES_TRANSACTIONS_QUERY_ALIAS_PREFIX)
     n_iter = DOWNLOAD_QUERY_SIZE // size
-    base = base_awards_query(filters)
+    base = base_awards_query(filters, is_for_transactions=not awards)
     max_iterations = 10
     total = es_client_count(index=index_name, body={"query": base}, retries=max_iterations)
     if total is None:
@@ -285,7 +285,6 @@ def concat_if_array(data):
 
 
 def base_awards_query(filters, is_for_transactions=False):
-    print(filters)
     query = {"bool": {"filter": {"bool": {"should": []}}}}
     for key, value in filters.items():
         if value is None:
@@ -710,4 +709,17 @@ def elasticsearch_download_query(filters):
     logger.info("Found {} awards based on filters".format(len(award_ids)))
     award_ids = [str(award_id) for award_id in award_ids]
     queryset = queryset.extra(where=['"awards"."generated_unique_award_id" = ANY(array{})'.format(award_ids)])
+    return queryset
+
+
+def elasticsearch_tx_download_query(filters):
+    queryset = UniversalTransactionView.objects.all()
+    transaction_ids = get_award_download_ids(filters, field="transaction_id", awards=False)
+    # flatten IDs
+    transaction_ids = list(itertools.chain.from_iterable(transaction_ids))
+    logger.info("Found {} transactions based on filters".format(len(transaction_ids)))
+    transaction_ids = [str(transaction_id) for transaction_id in transaction_ids]
+    queryset = queryset.extra(
+        where=['"transaction_normalized"."id" = ANY(\'{{{}}}\'::int[])'.format(",".join(transaction_ids))]
+    )
     return queryset
