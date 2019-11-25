@@ -121,7 +121,7 @@ class Command(BaseCommand):
         for fiscal_year in self.config["fiscal_years"]:
             job_number += 1
             index = self.config["index_name"]
-            filename = "{dir}{fy}_{level}.csv".format(
+            filename = "{dir}/{fy}_{level}.csv".format(
                 dir=self.config["directory"],
                 fy=fiscal_year,
                 level="awards" if self.config["awards"] else "transactions",

@@ -348,7 +348,12 @@
           }
         },
         "pop_country_name": {
-          "type": "text"
+          "type": "text",
+          "fields": {
+            "keyword": {
+              "type": "keyword"
+            }
+          }
         },
         "pop_state_code": {
           "type": "text",
@@ -367,7 +372,12 @@
           }
         },
         "pop_county_name": {
-          "type": "text"
+          "type": "text",
+          "fields": {
+            "keyword": {
+              "type": "keyword"
+            }
+          }
         },
         "pop_zip5": {
           "type": "text",
@@ -421,7 +431,12 @@
           }
         },
         "recipient_location_county_name": {
-          "type": "text"
+          "type": "text",
+          "fields": {
+            "keyword": {
+              "type": "keyword"
+            }
+          }
         },
         "recipient_location_zip5": {
           "type": "text",

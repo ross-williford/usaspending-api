@@ -8,7 +8,16 @@ from usaspending_api.accounts.helpers import TAS_COMPONENT_TO_FIELD_MAPPING
 from usaspending_api.accounts.models import TreasuryAppropriationAccount
 from usaspending_api.awards.v2.lookups.elasticsearch_lookups import KEYWORD_DATATYPE_FIELDS
 from usaspending_api.awards.v2.lookups.elasticsearch_lookups import INDEX_ALIASES_TO_AWARD_TYPES
-from usaspending_api.awards.v2.lookups.elasticsearch_lookups import TRANSACTIONS_LOOKUP, AWARDS_LOOKUP
+from usaspending_api.awards.v2.lookups.elasticsearch_lookups import (
+    TRANSACTIONS_LOOKUP,
+    AWARDS_LOOKUP,
+    award_contracts_mapping,
+    award_idv_mapping,
+    direct_payment_award_mapping,
+    grant_award_mapping,
+    loan_award_mapping,
+    other_award_mapping,
+)
 from usaspending_api.common.elasticsearch.client import es_client_query, es_client_count
 from usaspending_api.common.exceptions import InvalidParameterException
 
@@ -19,7 +28,12 @@ KEYWORD_DATATYPE_FIELDS = ["{}.raw".format(i) for i in KEYWORD_DATATYPE_FIELDS]
 
 TRANSACTIONS_LOOKUP.update({v: k for k, v in TRANSACTIONS_LOOKUP.items()})
 AWARDS_LOOKUP.update({v: k for k, v in AWARDS_LOOKUP.items()})
-
+award_contracts_mapping.update({v: k for k, v in award_contracts_mapping.items()})
+award_idv_mapping.update({v: k for k, v in award_idv_mapping.items()})
+direct_payment_award_mapping.update({v: k for k, v in direct_payment_award_mapping.items()})
+grant_award_mapping.update({v: k for k, v in grant_award_mapping.items()})
+loan_award_mapping.update({v: k for k, v in loan_award_mapping.items()})
+other_award_mapping.update({v: k for k, v in other_award_mapping.items()})
 
 def es_sanitize(input_string):
     """ Escapes reserved elasticsearch characters and removes when necessary """
@@ -42,17 +56,14 @@ def es_minimal_sanitize(keyword):
     return keyword
 
 
-def swap_keys(dictionary_, awards):
-    lookup = TRANSACTIONS_LOOKUP
-    if awards:
-        lookup = AWARDS_LOOKUP
+def swap_keys(dictionary_, awards, lookup):
     return dict((lookup.get(old_key, old_key), new_key) for (old_key, new_key) in dictionary_.items())
 
 
-def format_for_frontend(response, awards=False):
+def format_for_frontend(response, awards=False, lookup=TRANSACTIONS_LOOKUP):
     """ calls reverse key from TRANSACTIONS_LOOKUP """
     response = [result["_source"] for result in response]
-    return [swap_keys(result, awards) for result in response]
+    return [swap_keys(result, awards, lookup) for result in response]
 
 
 def base_query(keyword, fields=KEYWORD_DATATYPE_FIELDS):
@@ -278,9 +289,12 @@ def base_awards_query(filters, is_for_transactions=False):
                     z = v
                 queries.append({"query_string": {"query": z}})
 
-            query["bool"]["filter"]["bool"]["should"] = query["bool"]["filter"]["bool"]["should"] + [
-                {"dis_max": {"queries": queries}}
-            ]
+            query["bool"]["filter"]["bool"].update(
+                {
+                    "should": query["bool"]["filter"]["bool"]["should"] + [{"dis_max": {"queries": queries}}],
+                    "minimum_should_match": int(query["bool"]["filter"]["bool"].get("minimum_should_match") or 0) + 1,
+                }
+            )
 
         elif key == "time_period":
             should = []
@@ -540,7 +554,7 @@ def base_awards_query(filters, is_for_transactions=False):
             )
 
     # i am sorry about this
-    if len(query["bool"]["filter"]["bool"]["should"]) == None:
+    if len(query["bool"]["filter"]["bool"]["should"]) == 0:
         query["bool"]["filter"]["bool"].pop("should")
         if query["bool"]["filter"]["bool"] == {}:
             query["bool"]["filter"].pop("bool")
@@ -558,13 +572,34 @@ def search_awards(request_data, lower_limit, limit):
     limit: integer
     if transaction_type_code not found, return results for contracts
     """
-
+    lookups = {
+        "contracts": award_contracts_mapping,
+        "directpayments": direct_payment_award_mapping,
+        "grants": grant_award_mapping,
+        "idvs": award_idv_mapping,
+        "loans": loan_award_mapping,
+        "other": other_award_mapping,
+    }
     filters = request_data["filters"]
-    query_fields = [AWARDS_LOOKUP[i] for i in request_data["fields"]]
+    # query_fields = [AWARDS_LOOKUP[i] for i in request_data["fields"]]
+    # query_fields.extend(["award_id"])
+    # query_fields.extend(["generated_unique_award_id"])
+    # query_fields.extend(["prime_award_recipient_id"])
+    query_sort = AWARDS_LOOKUP[request_data["sort"]]
+
+    lookup = AWARDS_LOOKUP
+
+    for index, award_types in INDEX_ALIASES_TO_AWARD_TYPES.items():
+        if sorted(award_types) == sorted(request_data["filters"]["award_type_codes"]):
+            lookup = lookups[index]
+            index_name = "{}-{}".format(settings.AWARDS_INDEX_ROOT, index)
+        else:
+            if set(request_data["filters"]["award_type_codes"]).issubset(award_types):
+                index_name = "{}-{}".format(settings.AWARDS_INDEX_ROOT, index)
+    query_fields = [lookup[i] for i in request_data["fields"]]
     query_fields.extend(["award_id"])
     query_fields.extend(["generated_unique_award_id"])
     query_fields.extend(["prime_award_recipient_id"])
-    query_sort = AWARDS_LOOKUP[request_data["sort"]]
     query = {
         "_source": query_fields,
         "from": lower_limit,
@@ -572,17 +607,11 @@ def search_awards(request_data, lower_limit, limit):
         "query": base_awards_query(filters),
         "sort": [{query_sort: {"order": request_data["order"]}}],
     }
-    for index, award_types in INDEX_ALIASES_TO_AWARD_TYPES.items():
-        if sorted(award_types) == sorted(request_data["filters"]["award_type_codes"]):
-            index_name = "{}-{}".format(settings.AWARDS_INDEX_ROOT, index)
-        else:
-            if set(request_data["filters"]["award_type_codes"]).issubset(award_types):
-                index_name = "{}-{}".format(settings.AWARDS_INDEX_ROOT, index)
 
     response = es_client_query(index=index_name, body=query, retries=10)
     if response:
         total = response["hits"]["total"]
-        results = format_for_frontend(response["hits"]["hits"], True)
+        results = format_for_frontend(response["hits"]["hits"], True, lookup)
         return True, results, total
     else:
         return False, "There was an error connecting to the ElasticSearch cluster", 0
@@ -602,7 +631,7 @@ def elastic_awards_count(request_data):
     response = {}
     success = True
     for t in types:
-        index_name = "future-awards-{}".format(t)
+        index_name = "award-query-{}".format(t)
         results = es_client_count(index=index_name, body=query, retries=10)
         if t == "directpayments":
             t = "direct_payments"

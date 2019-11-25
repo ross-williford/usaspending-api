@@ -127,6 +127,14 @@
             }
           }
         },
+        "recipient_hash": {
+          "type": "text",
+          "fields": {
+            "keyword": {
+              "type": "keyword"
+            }
+          }
+        },
         "parent_recipient_unique_id": {
           "type": "text",
           "fields": {
