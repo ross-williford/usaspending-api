@@ -33,7 +33,6 @@ from usaspending_api.common.validator.award_filter import AWARD_FILTER
 from usaspending_api.common.validator.pagination import PAGINATION
 from usaspending_api.common.validator.tinyshield import TinyShield
 from usaspending_api.common.recipient_lookups import annotate_recipient_id, annotate_prime_award_recipient_id
-from usaspending_api.recipient.models import RecipientProfile, RecipientLookup
 from usaspending_api.search.v2.elasticsearch_helper import search_awards
 
 
