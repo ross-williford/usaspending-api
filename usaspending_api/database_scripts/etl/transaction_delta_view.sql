@@ -1,5 +1,7 @@
--- Needs to be present in the Postgres DB if data needs to be retrieved for Elasticsearch
+-- "create or replace view" does not like it when columns are added
+DROP VIEW transaction_delta_view;
 
+-- All need to be present in the Postgres DB if data needs to be retrieved for Elasticsearch
 CREATE OR REPLACE VIEW transaction_delta_view AS
 SELECT
   UTM.transaction_id,
@@ -81,19 +83,41 @@ SELECT
   UTM.pop_country_code,
   UTM.pop_country_name,
   UTM.pop_state_code,
-  UTM.pop_county_code,
+  COALESCE(FPDS.place_of_perfor_state_desc, FABS.place_of_perform_state_nam) AS pop_state_name,
+  LPAD(
+    CAST(
+      CAST(
+        (REGEXP_MATCH(UTM.pop_county_code, '^[A-Z]*(\d+)(?:\.\d+)?$'))[1] AS smallint
+      ) AS text
+  ), 3, '0') AS pop_county_code,
   UTM.pop_county_name,
   UTM.pop_zip5,
-  UTM.pop_congressional_code,
+  LPAD(
+    CAST(
+      CAST(
+        (REGEXP_MATCH(UTM.pop_congressional_code, '^[A-Z]*(\d+)(?:\.\d+)?$'))[1] AS smallint
+      ) AS text
+  ), 2, '0') AS pop_congressional_code,
   UTM.pop_city_name,
 
   UTM.recipient_location_country_code,
   UTM.recipient_location_country_name,
   UTM.recipient_location_state_code,
-  UTM.recipient_location_county_code,
+  COALESCE(FPDS.legal_entity_state_descrip, FABS.legal_entity_state_name) AS recipient_location_state_name,
+  LPAD(
+    CAST(
+      CAST(
+        (REGEXP_MATCH(UTM.recipient_location_county_code, '^[A-Z]*(\d+)(?:\.\d+)?$'))[1] AS smallint
+      ) AS text
+  ), 3, '0') AS recipient_location_county_code,
   UTM.recipient_location_county_name,
   UTM.recipient_location_zip5,
-  UTM.recipient_location_congressional_code,
+  LPAD(
+    CAST(
+      CAST(
+        (REGEXP_MATCH(UTM.recipient_location_congressional_code, '^[A-Z]*(\d+)(?:\.\d+)?$'))[1] AS smallint
+      ) AS text
+  ), 2, '0') AS recipient_location_congressional_code,
   UTM.recipient_location_city_name,
   UTM.treasury_account_identifiers,
 
@@ -106,6 +130,7 @@ LEFT JOIN transaction_fpds FPDS ON (UTM.transaction_id = FPDS.transaction_id)
 LEFT JOIN transaction_fabs FABS ON (UTM.transaction_id = FABS.transaction_id)
 LEFT OUTER JOIN awards AWD ON (UTM.award_id = AWD.id)
 -- these joins should be removed once moving away from proof of concept with ES Advanced Search
+-- and all changes should be made to universal_transaction_matview
 LEFT OUTER JOIN agency AA ON (TM.awarding_agency_id = AA.id)
 LEFT OUTER JOIN agency FA ON (TM.funding_agency_id = FA.id)
 LEFT OUTER JOIN toptier_agency TAA ON (AA.toptier_agency_id = TAA.toptier_agency_id)

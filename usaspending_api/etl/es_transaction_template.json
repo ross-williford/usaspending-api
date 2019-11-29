@@ -363,6 +363,14 @@
             }
           }
         },
+        "pop_state_name": {
+          "type": "text",
+          "fields": {
+            "keyword": {
+              "type": "keyword"
+            }
+          }
+        },
         "pop_county_code": {
           "type": "text",
           "fields": {
@@ -388,7 +396,12 @@
           }
         },
         "pop_congressional_code": {
-          "type": "keyword"
+          "type": "text",
+          "fields": {
+            "keyword": {
+              "type": "keyword"
+            }
+          }
         },
         "pop_city_name": {
           "type": "text",
@@ -415,6 +428,14 @@
           }
         },
         "recipient_location_state_code": {
+          "type": "text",
+          "fields": {
+            "keyword": {
+              "type": "keyword"
+            }
+          }
+        },
+        "recipient_location_state_name": {
           "type": "text",
           "fields": {
             "keyword": {

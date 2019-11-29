@@ -35,6 +35,7 @@ grant_award_mapping.update({v: k for k, v in grant_award_mapping.items()})
 loan_award_mapping.update({v: k for k, v in loan_award_mapping.items()})
 other_award_mapping.update({v: k for k, v in other_award_mapping.items()})
 
+
 def es_sanitize(input_string):
     """ Escapes reserved elasticsearch characters and removes when necessary """
 
@@ -651,9 +652,7 @@ def elasticsearch_dollar_sum_aggregation(column_to_sum):
     :return: the elasticsearch aggregation to get both the cents and dollars for a sum
     """
     return {
-        "sum_as_cents": {
-            "sum": {"script": {"lang": "painless", "source": "doc['{}'].value * 100".format(column_to_sum)}}
-        },
+        "sum_as_cents": {"sum": {"script": {"lang": "painless", "source": f"doc['{column_to_sum}'].value * 100"}}},
         "sum_as_dollars": {
             "bucket_script": {"buckets_path": {"sum_as_cents": "sum_as_cents"}, "script": "params.sum_as_cents / 100"}
         },
