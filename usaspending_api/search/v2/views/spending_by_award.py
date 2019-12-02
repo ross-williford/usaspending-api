@@ -106,6 +106,7 @@ class SpendingByAwardVisualizationViewSet(APIView):
         if self.filters.get("elasticsearch"):
             success, results, total = self.elasticsearch_response(json_request)
             if success:
+                results = self.annotate_recipients(results)
                 return Response(
                     self.populate_response(
                         results, has_next=total - self.pagination["lower_bound"] > self.pagination["limit"]
@@ -115,6 +116,11 @@ class SpendingByAwardVisualizationViewSet(APIView):
                 return Response("There was an Error connecting to the elasticsearch cluster.")
         return Response(self.create_response(self.construct_queryset()))
 
+    def annotate_recipients(self, results):
+        for result in results:
+            if result["recipient_id"] == "-C" or result["recipient_id"] == '-R':
+                result["recipient_id"] = None
+        return results
     def elasticsearch_response(self, request_data):
         lower_limit = self.pagination["lower_bound"]
         limit = self.pagination["limit"]
