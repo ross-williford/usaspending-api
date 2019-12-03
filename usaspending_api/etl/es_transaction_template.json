@@ -472,10 +472,10 @@
           }
         },
         "recipient_location_country_code": {
-          "type": "keyword",
+          "type": "text",
           "fields": {
-            "raw": {
-              "type": "text"
+            "keyword": {
+              "type": "keyword"
             }
           }
         },

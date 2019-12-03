@@ -423,7 +423,7 @@ def base_awards_query(filters, is_for_transactions=False):
                     "county_code": v.get("county"),
                     "congressional_code": v.get("district"),
                     "city_name.keyword": v.get("city"),
-                    "zip5": v.get("zip")
+                    "zip5": v.get("zip"),
                 }
                 min_match = 0
                 for location in locations.keys():
@@ -470,7 +470,7 @@ def base_awards_query(filters, is_for_transactions=False):
                     "county_code": v.get("county"),
                     "congressional_code": v.get("district"),
                     "city_name.keyword": v.get("city"),
-                    "zip5": v.get("zip")
+                    "zip5": v.get("zip"),
                 }
                 min_match = 0
                 for location in locations.keys():

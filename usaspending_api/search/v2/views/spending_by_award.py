@@ -118,9 +118,10 @@ class SpendingByAwardVisualizationViewSet(APIView):
 
     def annotate_recipients(self, results):
         for result in results:
-            if result["recipient_id"] == "-C" or result["recipient_id"] == '-R':
+            if result["recipient_id"] == "-C" or result["recipient_id"] == "-R":
                 result["recipient_id"] = None
         return results
+
     def elasticsearch_response(self, request_data):
         lower_limit = self.pagination["lower_bound"]
         limit = self.pagination["limit"]
