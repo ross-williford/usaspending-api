@@ -418,10 +418,7 @@ class BusinessLogic:
         all_aggs = {
             "aggs": {
                 "group_by_agency_name": {
-                    "terms": {
-                        "field": f"{agency_key}_agency_name.keyword",
-                        "size": 1000000
-                    },
+                    "terms": {"field": f"{agency_key}_agency_name.keyword", "size": 1000000},
                     "aggs": {
                         **elasticsearch_dollar_sum_aggregation(self.obligation_column),
                         "group_by_agency_abbreviation": {
@@ -470,18 +467,11 @@ class BusinessLogic:
         all_aggs = {
             "aggs": {
                 "group_by_recipient_hash": {
-                    "terms": {
-                        "field": "recipient_hash.keyword",
-                        "size": 1000000
-                    },
+                    "terms": {"field": "recipient_hash.keyword", "size": 1000000},
                     "aggs": {
                         **elasticsearch_dollar_sum_aggregation(self.obligation_column),
-                        "group_by_recipient_name": {
-                            "terms": {"field": "recipient_name.keyword"}
-                        },
-                        "group_by_recipient_unique_id": {
-                            "terms": {"field": "recipient_unique_id.keyword"}
-                        },
+                        "group_by_recipient_name": {"terms": {"field": "recipient_name.keyword"}},
+                        "group_by_recipient_unique_id": {"terms": {"field": "recipient_unique_id.keyword"}},
                         "sum_bucket_sort": {
                             "bucket_sort": {
                                 "sort": {"sum_as_dollars": {"order": "desc"}},
@@ -513,10 +503,9 @@ class BusinessLogic:
             if recipient_name in SPECIAL_CASES:
                 recipient_hash = None
             else:
-                recipient_hash = self._get_recipient_id({
-                    "recipient_hash": recipient_hash,
-                    "recipient_unique_id": recipient_unique_id
-                })
+                recipient_hash = self._get_recipient_id(
+                    {"recipient_hash": recipient_hash, "recipient_unique_id": recipient_unique_id}
+                )
 
             sum_by_recipient = recipient_hash_bucket.get("sum_as_dollars", {"value": 0})["value"]
             results.append(
