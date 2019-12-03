@@ -266,7 +266,7 @@ class SpendingByGeographyVisualizationViewSet(APIView):
                             "terms": {
                                 "field": f"{self.scope_field_name}_state_code.keyword",
                                 "order": {"_key": "asc"},
-                                "size": 5000,
+                                "size": 100,
                             }
                         }
                     },
@@ -308,7 +308,7 @@ class SpendingByGeographyVisualizationViewSet(APIView):
             county_group_by_agg = {
                 "aggs": {
                     "group_by_county_code": {
-                        "terms": {"field": f"{self.loc_lookup}.keyword", "order": {"_key": "asc"}, "size": "2000"},
+                        "terms": {"field": f"{self.loc_lookup}.keyword", "order": {"_key": "asc"}, "size": 2000},
                         "aggs": {
                             "group_by_county_name": {
                                 "terms": {"field": f"{self.scope_field_name}_county_name.keyword"},
@@ -389,6 +389,9 @@ class SpendingByGeographyVisualizationViewSet(APIView):
         return results
 
     def combine_geo_layer_filters_with_search_filters(self) -> None:
+        '''
+        CURRENTLY DOES NOT WORK WITH LARGER GEO_LAYER_FILTERS
+        '''
         search_filter_key = None
 
         if self.scope == "place_of_performance":
@@ -412,8 +415,8 @@ class SpendingByGeographyVisualizationViewSet(APIView):
                 )
 
     def query_elasticsearch(self) -> dict:
-        if self.geo_layer_filters:
-            self.combine_geo_layer_filters_with_search_filters()
+        #if self.geo_layer_filters:
+        #    self.combine_geo_layer_filters_with_search_filters()
 
         query = {
             "query": base_awards_query(self.filters, is_for_transactions=True),
@@ -426,4 +429,5 @@ class SpendingByGeographyVisualizationViewSet(APIView):
         results = []
         if hits and hits["hits"]["total"] > 0:
             results = self.parse_elasticsearch_response(hits)
-        return results
+
+        return list(filter(lambda val: val["shape_code"] in self.geo_layer_filters, results))

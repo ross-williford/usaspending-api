@@ -35,8 +35,8 @@ SELECT
   UTM.naics_description,
   AWD.type_description,
   UTM.award_category,
-  UTM.recipient_hash,
   UTM.recipient_unique_id,
+  CONCAT(UTM.recipient_hash, '-', case when UTM.parent_recipient_unique_id is null then 'R' else 'C' end) as recipient_hash,
   UTM.parent_recipient_unique_id,
   UTM.recipient_name,
 

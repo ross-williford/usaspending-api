@@ -489,23 +489,20 @@ class BusinessLogic:
             return results
 
         for recipient_hash_bucket in hits["aggregations"]["group_by_recipient_hash"]["buckets"]:
-            recipient_hash = recipient_hash_bucket["key"]
+            if recipient_name in SPECIAL_CASES:
+                recipient_hash = None
+            else:
+                recipient_hash = recipient_hash_bucket["key"]
 
             if len(recipient_hash_bucket["group_by_recipient_name"]["buckets"]) > 0:
                 recipient_name = recipient_hash_bucket["group_by_recipient_name"]["buckets"][0]["key"]
             else:
                 recipient_name = None
+
             if len(recipient_hash_bucket["group_by_recipient_unique_id"]["buckets"]) > 0:
                 recipient_unique_id = recipient_hash_bucket["group_by_recipient_unique_id"]["buckets"][0]["key"]
             else:
                 recipient_unique_id = None
-
-            if recipient_name in SPECIAL_CASES:
-                recipient_hash = None
-            else:
-                recipient_hash = self._get_recipient_id(
-                    {"recipient_hash": recipient_hash, "recipient_unique_id": recipient_unique_id}
-                )
 
             sum_by_recipient = recipient_hash_bucket.get("sum_as_dollars", {"value": 0})["value"]
             results.append(
