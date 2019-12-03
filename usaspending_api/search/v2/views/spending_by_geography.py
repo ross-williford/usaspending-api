@@ -415,7 +415,7 @@ class SpendingByGeographyVisualizationViewSet(APIView):
         if self.geo_layer_filters:
             self.combine_geo_layer_filters_with_search_filters()
 
-        query = {"query": base_awards_query(self.filters), **self.create_elasticsearch_aggregation(), "size": 0}
+        query = {"query": base_awards_query(self.filters, is_for_transactions=True), **self.create_elasticsearch_aggregation(), "size": 0}
 
         hits = es_client_query(index="*future-{}".format(settings.ES_TRANSACTIONS_NAME_SUFFIX), body=query)
 

@@ -35,16 +35,17 @@ SELECT
   UTM.naics_description,
   AWD.type_description,
   UTM.award_category,
+  UTM.recipient_hash,
   UTM.recipient_unique_id,
   UTM.parent_recipient_unique_id,
   UTM.recipient_name,
 
   AWD.date_signed,
   UTM.action_date,
-  DATE(UTM.action_date + interval '3 months') as fiscal_date,
-  extract(month from UTM.action_date::date + interval '3 months') as fiscal_month,
-  extract(quarter from UTM.action_date::date + interval '3 months') as fiscal_quarter,
-  extract(year from UTM.action_date::date + interval '3 months') as fiscal_year,
+  DATE(UTM.action_date + interval '3 months') AS fiscal_date,
+  extract(month from UTM.action_date::date + interval '3 months') AS fiscal_month,
+  extract(quarter from UTM.action_date::date + interval '3 months') AS fiscal_quarter,
+  extract(year from UTM.action_date::date + interval '3 months') AS fiscal_year,
   AWD.period_of_performance_start_date,
   AWD.period_of_performance_current_end_date,
   FPDS.ordering_period_end_date,
@@ -71,6 +72,7 @@ SELECT
   UTM.awarding_subtier_agency_abbreviation,
   UTM.funding_subtier_agency_abbreviation,
 
+  CFDA.id AS cfda_id,
   UTM.cfda_number,
   UTM.cfda_title,
   '' AS cfda_popular_name,
@@ -120,6 +122,7 @@ SELECT
   ), 2, '0') AS recipient_location_congressional_code,
   UTM.recipient_location_city_name,
   UTM.treasury_account_identifiers,
+  FED_ACCT.federal_accounts,
 
   UTM.business_categories
 
@@ -136,4 +139,24 @@ LEFT OUTER JOIN agency FA ON (TM.funding_agency_id = FA.id)
 LEFT OUTER JOIN toptier_agency TAA ON (AA.toptier_agency_id = TAA.toptier_agency_id)
 LEFT OUTER JOIN subtier_agency SAA ON (AA.subtier_agency_id = SAA.subtier_agency_id)
 LEFT OUTER JOIN toptier_agency TFA ON (FA.toptier_agency_id = TFA.toptier_agency_id)
-LEFT OUTER JOIN subtier_agency SFA ON (FA.subtier_agency_id = SFA.subtier_agency_id);
+LEFT OUTER JOIN subtier_agency SFA ON (FA.subtier_agency_id = SFA.subtier_agency_id)
+LEFT OUTER JOIN references_cfda CFDA ON (FABS.cfda_number = CFDA.program_number)
+LEFT OUTER JOIN (
+  SELECT
+    faba.award_id,
+    JSONB_AGG(
+      DISTINCT JSONB_BUILD_OBJECT(
+        'id', fa.id,
+        'account_title', fa.account_title,
+        'federal_account_code', fa.federal_account_code
+      )
+    ) federal_accounts
+  FROM
+    federal_account fa
+    INNER JOIN treasury_appropriation_account taa ON fa.id = taa.federal_account_id
+    INNER JOIN financial_accounts_by_awards faba ON taa.treasury_account_identifier = faba.treasury_account_id
+  WHERE
+    faba.award_id IS NOT NULL
+  GROUP BY
+    faba.award_id
+) FED_ACCT ON (FED_ACCT.award_id = UTM.award_id);

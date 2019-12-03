@@ -42,6 +42,7 @@ TRANSACTION_VIEW_COLUMNS = [
     "naics_description",
     "type_description",
     "award_category",
+    "recipient_hash",
     "recipient_unique_id",
     "parent_recipient_unique_id",
     "recipient_name",
@@ -76,6 +77,7 @@ TRANSACTION_VIEW_COLUMNS = [
     "funding_toptier_agency_abbreviation",
     "awarding_subtier_agency_abbreviation",
     "funding_subtier_agency_abbreviation",
+    "cfda_id",
     "cfda_number",
     "cfda_title",
     "cfda_popular_name",
@@ -103,6 +105,7 @@ TRANSACTION_VIEW_COLUMNS = [
     "recipient_location_city_name",
     "type",
     "treasury_account_identifiers",
+    "federal_accounts",
 ]
 
 AWARD_VIEW_COLUMNS = [
@@ -263,6 +266,16 @@ class DataJob:
 # ==============================================================================
 
 
+def convert_postgres_array_as_string_to_list(array_as_string: str) -> list:
+    """
+        Postgres arrays are stored in CSVs as strings. Elasticsearch is able to handle lists of items, but needs to
+        be passed a list instead of a string. In the case of an empty array, return null
+
+        For example, "{this,is,a,postgres,array}" -> ["this", "is", "a", "postgres", "array"].
+    """
+    return array_as_string.replace("{", "").replace("}", "").split(",") if len(array_as_string) > 2 else None
+
+
 def process_guarddog(process_list):
     """
         pass in a list of multiprocess Process objects.
@@ -402,7 +415,13 @@ def csv_chunk_gen(filename, chunksize, job_id, awards):
     printf({"msg": "Opening {} (batch size = {})".format(filename, chunksize), "job": job_id, "f": "ES Ingest"})
     # Panda's data type guessing causes issues for Elasticsearch. Explicitly cast using dictionary
     dtype = {k: str for k in AWARD_VIEW_COLUMNS} if awards else {k: str for k in TRANSACTION_VIEW_COLUMNS}
-    for file_df in pd.read_csv(filename, dtype=dtype, header=0, chunksize=chunksize):
+    # Specifying a dtype is not enough for these columns
+    converters = {
+        "business_categories": convert_postgres_array_as_string_to_list,
+        "treasury_account_identifiers": convert_postgres_array_as_string_to_list,
+        "federal_accounts": lambda string_to_convert: json.loads(string_to_convert) if string_to_convert else None,
+    }
+    for file_df in pd.read_csv(filename, dtype=dtype, header=0, chunksize=chunksize, converters=converters):
         file_df = file_df.where(cond=(pd.notnull(file_df)), other=None)
         yield file_df.to_dict(orient="records")
 

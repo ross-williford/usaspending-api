@@ -102,7 +102,12 @@
           }
         },
         "product_or_service_description": {
-          "type": "text"
+          "type": "text",
+          "fields": {
+            "keyword": {
+              "type": "keyword"
+            }
+          }
         },
         "naics_code": {
           "type": "text",
@@ -113,7 +118,12 @@
           }
         },
         "naics_description": {
-          "type": "text"
+          "type": "text",
+          "fields": {
+            "keyword": {
+              "type": "keyword"
+            }
+          }
         },
         "type_description": {
           "type": "keyword",
@@ -127,11 +137,29 @@
           "type": "text",
           "index": false
         },
+        "recipient_hash": {
+          "type": "text",
+          "fields": {
+            "keyword": {
+              "type": "keyword"
+            }
+          }
+        },
         "recipient_unique_id": {
-          "type": "text"
+          "type": "text",
+          "fields": {
+            "keyword": {
+              "type": "keyword"
+            }
+          }
         },
         "parent_recipient_unique_id": {
-          "type": "text"
+          "type": "text",
+          "fields": {
+            "keyword": {
+              "type": "keyword"
+            }
+          }
         },
         "recipient_name": {
           "type": "text",
@@ -284,16 +312,44 @@
           }
         },
         "awarding_toptier_agency_abbreviation": {
-          "type": "text"
+          "type": "text",
+          "fields": {
+            "keyword": {
+              "type": "keyword"
+            }
+          }
         },
         "funding_toptier_agency_abbreviation": {
-          "type": "text"
+          "type": "text",
+          "fields": {
+            "keyword": {
+              "type": "keyword"
+            }
+          }
         },
         "awarding_subtier_agency_abbreviation": {
-          "type": "text"
+          "type": "text",
+          "fields": {
+            "keyword": {
+              "type": "keyword"
+            }
+          }
         },
         "funding_subtier_agency_abbreviation": {
-          "type": "text"
+          "type": "text",
+          "fields": {
+            "keyword": {
+              "type": "keyword"
+            }
+          }
+        },
+        "cfda_id": {
+          "type": "text",
+          "fields": {
+            "keyword": {
+              "type": "keyword"
+            }
+          }
         },
         "cfda_number": {
           "type": "text",
@@ -305,7 +361,11 @@
         },
         "cfda_title": {
           "type": "text",
-          "index": false
+          "fields": {
+            "keyword": {
+              "type": "keyword"
+            }
+          }
         },
         "cfda_popular_name": {
           "type": "text",
@@ -492,6 +552,28 @@
           "fields": {
             "keyword": {
               "type": "keyword"
+            }
+          }
+        },
+        "federal_accounts": {
+          "type": "nested",
+          "properties": {
+            "id": {"type": "integer"},
+            "account_title": {
+              "type": "text",
+              "fields": {
+                "keyword": {
+                  "type": "keyword"
+                }
+              }
+            },
+            "federal_account_code": {
+              "type": "text",
+              "fields": {
+                "keyword": {
+                  "type": "keyword"
+                }
+              }
             }
           }
         }

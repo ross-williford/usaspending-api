@@ -1,5 +1,6 @@
 import copy
 import logging
+from collections import OrderedDict
 
 from django.conf import settings
 from django.db.models import Case, IntegerField, Sum, Value, When
@@ -10,6 +11,7 @@ from usaspending_api.awards.v2.filters.sub_award import subaward_filter
 from usaspending_api.awards.v2.filters.view_selector import spending_by_category as sbc_view_queryset
 from usaspending_api.common.api_versioning import api_transformations, API_TRANSFORM_FUNCTIONS
 from usaspending_api.common.cache_decorator import cache_response
+from usaspending_api.common.elasticsearch.client import es_client_query
 from usaspending_api.common.exceptions import InvalidParameterException
 from usaspending_api.common.helpers.api_helper import alias_response
 from usaspending_api.common.helpers.generic_helper import get_simple_pagination_metadata
@@ -20,7 +22,7 @@ from usaspending_api.common.validator.tinyshield import TinyShield
 from usaspending_api.recipient.models import RecipientLookup, RecipientProfile, StateData
 from usaspending_api.recipient.v2.lookups import SPECIAL_CASES
 from usaspending_api.references.models import Agency, Cfda, LegalEntity, NAICS, PSC, RefCountryCode
-
+from usaspending_api.search.v2.elasticsearch_helper import base_awards_query, elasticsearch_dollar_sum_aggregation
 
 logger = logging.getLogger(__name__)
 
@@ -100,10 +102,17 @@ class SpendingByCategoryVisualizationViewSet(APIView):
         models.extend(copy.deepcopy(AWARD_FILTER))
         models.extend(copy.deepcopy(PAGINATION))
 
+        # Temporary workaround to make minimal changes for testing elasticsearch
+
+        is_elasticsearch = request.data["filters"].get("elasticsearch", False)
+        request.data["filters"]["elasticsearch"] = is_elasticsearch
+        del request.data["filters"]["elasticsearch"]
         # Apply/enforce POST body schema and data validation in request
         validated_payload = TinyShield(models).block(request.data)
 
         # Execute the business logic for the endpoint and return a python dict to be converted to a Django response
+        if is_elasticsearch and not validated_payload["subawards"]:
+            return Response(BusinessLogic(validated_payload).query_elasticsearch())
         return Response(BusinessLogic(validated_payload).results())
 
 
@@ -168,7 +177,7 @@ class BusinessLogic:
             results = self.industry_and_other_codes()
         elif self.category in ("county", "district", "state_territory", "country"):
             results = self.location()
-        elif self.category in ("federal_account"):
+        elif self.category in ("federal_account",):
             results = self.federal_account()
 
         page_metadata = get_simple_pagination_metadata(len(results), self.limit, self.page)
@@ -390,6 +399,173 @@ class BusinessLogic:
         # DB hit here
         query_results = list(self.queryset[self.lower_limit : self.upper_limit])
         return alias_response(ALIAS_DICT[self.category], query_results)
+
+    def post_query_to_elasticsearch(self, aggs: dict) -> list:
+        query = {"query": base_awards_query(self.filters, is_for_transactions=True), **aggs, "size": 0}
+        return es_client_query(index="*future-{}".format(settings.ES_TRANSACTIONS_NAME_SUFFIX), body=query)
+
+    def generate_size_and_from(self) -> dict:
+        return {"from": (self.page - 1) * self.limit, "size": self.limit + 1}
+
+    def agency_query(self) -> list:
+        agency_key_lookup = {
+            "awarding_agency": "awarding_toptier",
+            "awarding_subagency": "awarding_subtier",
+            "funding_agency": "funding_toptier",
+            "funding_subagency": "funding_subtier",
+        }
+        agency_key = agency_key_lookup[self.category]
+        all_aggs = {
+            "aggs": {
+                "group_by_agency_name": {
+                    "terms": {
+                        "field": f"{agency_key}_agency_name.keyword",
+                        "size": 1000000
+                    },
+                    "aggs": {
+                        **elasticsearch_dollar_sum_aggregation(self.obligation_column),
+                        "group_by_agency_abbreviation": {
+                            "terms": {"field": f"{agency_key}_agency_abbreviation.keyword"}
+                        },
+                        "sum_bucket_sort": {
+                            "bucket_sort": {
+                                "sort": {"sum_as_dollars": {"order": "desc"}},
+                                **self.generate_size_and_from(),
+                            }
+                        },
+                    },
+                }
+            }
+        }
+
+        results = []
+        hits = self.post_query_to_elasticsearch(all_aggs)
+        if hits["hits"]["total"] == 0:
+            return results
+
+        for agency_name_bucket in hits["aggregations"]["group_by_agency_name"]["buckets"]:
+            agency_name = agency_name_bucket["key"]
+            if len(agency_name_bucket["group_by_agency_abbreviation"]["buckets"]) > 0:
+                agency_abbrev = agency_name_bucket["group_by_agency_abbreviation"]["buckets"][0]["key"]
+            else:
+                agency_abbrev = None
+            sum_by_agency = agency_name_bucket.get("sum_as_dollars", {"value": 0})["value"]
+            results.append(
+                OrderedDict(
+                    [
+                        ("amount", sum_by_agency),
+                        ("code", agency_abbrev),
+                        ("id", fetch_agency_tier_id_by_agency(agency_name, "_subtier" in agency_key)),
+                        ("name", agency_name),
+                    ]
+                )
+            )
+
+        return results
+
+    def recipient_query(self) -> dict:
+        if self.category == "recipient_parent_duns":
+            self.raise_not_implemented()
+
+        all_aggs = {
+            "aggs": {
+                "group_by_recipient_hash": {
+                    "terms": {
+                        "field": "recipient_hash.keyword",
+                        "size": 1000000
+                    },
+                    "aggs": {
+                        **elasticsearch_dollar_sum_aggregation(self.obligation_column),
+                        "group_by_recipient_name": {
+                            "terms": {"field": "recipient_name.keyword"}
+                        },
+                        "group_by_recipient_unique_id": {
+                            "terms": {"field": "recipient_unique_id.keyword"}
+                        },
+                        "sum_bucket_sort": {
+                            "bucket_sort": {
+                                "sort": {"sum_as_dollars": {"order": "desc"}},
+                                **self.generate_size_and_from(),
+                            }
+                        },
+                    },
+                }
+            }
+        }
+
+        results = []
+        hits = self.post_query_to_elasticsearch(all_aggs)
+        if hits["hits"]["total"] == 0:
+            return results
+
+        for recipient_hash_bucket in hits["aggregations"]["group_by_recipient_hash"]["buckets"]:
+            recipient_hash = recipient_hash_bucket["key"]
+
+            if len(recipient_hash_bucket["group_by_recipient_name"]["buckets"]) > 0:
+                recipient_name = recipient_hash_bucket["group_by_recipient_name"]["buckets"][0]["key"]
+            else:
+                recipient_name = None
+            if len(recipient_hash_bucket["group_by_recipient_unique_id"]["buckets"]) > 0:
+                recipient_unique_id = recipient_hash_bucket["group_by_recipient_unique_id"]["buckets"][0]["key"]
+            else:
+                recipient_unique_id = None
+
+            if recipient_name in SPECIAL_CASES:
+                recipient_hash = None
+            else:
+                recipient_hash = self._get_recipient_id({
+                    "recipient_hash": recipient_hash,
+                    "recipient_unique_id": recipient_unique_id
+                })
+
+            sum_by_recipient = recipient_hash_bucket.get("sum_as_dollars", {"value": 0})["value"]
+            results.append(
+                OrderedDict(
+                    [
+                        ("amount", sum_by_recipient),
+                        ("code", recipient_unique_id),
+                        ("name", recipient_name),
+                        ("recipient_id", recipient_hash),
+                    ]
+                )
+            )
+
+        return results
+
+    def industry_and_other_codes_query(self) -> dict:
+        pass
+
+    def location_query(self) -> dict:
+        pass
+
+    def federal_account_query(self) -> dict:
+        pass
+
+    def query_elasticsearch(self) -> dict:
+        results = None
+        if self.category in ("awarding_agency", "awarding_subagency"):
+            results = self.agency_query()
+        elif self.category in ("funding_agency", "funding_subagency"):
+            results = self.agency_query()
+        elif self.category in ("recipient_duns", "recipient_parent_duns"):
+            results = self.recipient_query()
+        elif self.category in ("cfda", "psc", "naics"):
+            results = self.industry_and_other_codes_query()
+        elif self.category in ("county", "district", "state_territory", "country"):
+            results = self.location_query()
+        elif self.category in ("federal_account",):
+            results = self.federal_account_query()
+
+        page_metadata = get_simple_pagination_metadata(len(results), self.limit, self.page)
+
+        response = {
+            "category": self.category,
+            "limit": self.limit,
+            "page_metadata": page_metadata,
+            "results": results[: self.limit],
+        }
+
+        return response
 
 
 def fetch_agency_tier_id_by_agency(agency_name, is_subtier=False):
