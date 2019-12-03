@@ -16,6 +16,9 @@ class YearLimitedDownloadViewSet(BaseDownloadViewSet):
 
         # TODO: update front end to use the Common Filter Object and get rid of this function
         self.process_filters(request.data)
+        if request.data["filters"].get("elasticsearch"):
+            request.data["filters"].pop("elasticsearch")
+            return BaseDownloadViewSet.post(self, request, "elastic_award")
 
         return BaseDownloadViewSet.post(self, request, "award")
 
@@ -33,6 +36,8 @@ class YearLimitedDownloadViewSet(BaseDownloadViewSet):
             request_data["filters"] = {"elasticsearch_keyword": keyword_filter}
             return
 
+        if "elastic_award" in request_data["award_levels"]:
+            return
         # Validate other parameters previously required by the Bulk Download endpoint
         for required_param in ["award_types", "agency", "date_type", "date_range"]:
             if required_param not in filters:

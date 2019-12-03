@@ -38,7 +38,7 @@ from usaspending_api.download.helpers.download_annotation_functions import (
     idv_order_annotations,
     idv_transaction_annotations,
 )
-
+from usaspending_api.search.v2.elasticsearch_helper import elasticsearch_download_query, elasticsearch_tx_download_query
 
 LookupType = namedtuple("LookupType", ["id", "name", "desc"])
 
@@ -67,6 +67,16 @@ VALUE_MAPPINGS = {
         "filter_function": universal_award_matview_filter,
         "annotations_function": universal_award_matview_annotations,
     },
+    "elastic_awards": {
+        "source_type": "award",
+        "table": AwardSearchView,
+        "table_name": "award",
+        "download_name": "prime_awards",
+        "contract_data": "award__latest_transaction__contract_data",
+        "assistance_data": "award__latest_transaction__assistance_data",
+        "filter_function": elasticsearch_download_query,
+        "annotations_function": universal_award_matview_annotations,
+    },
     # Transaction Level
     "transactions": {
         "source_type": "award",
@@ -76,6 +86,16 @@ VALUE_MAPPINGS = {
         "contract_data": "transaction__contract_data",
         "assistance_data": "transaction__assistance_data",
         "filter_function": universal_transaction_matview_filter,
+        "annotations_function": universal_transaction_matview_annotations,
+    },
+    "elastic_transactions": {
+        "source_type": "award",
+        "table": UniversalTransactionView,
+        "table_name": "transaction",
+        "download_name": "prime_transactions",
+        "contract_data": "transaction__contract_data",
+        "assistance_data": "transaction__assistance_data",
+        "filter_function": elasticsearch_tx_download_query,
         "annotations_function": universal_transaction_matview_annotations,
     },
     # SubAward Level
@@ -266,3 +286,8 @@ CFO_CGACS_MAPPING = OrderedDict(
     ]
 )
 CFO_CGACS = list(CFO_CGACS_MAPPING.keys())
+
+FILE_FORMATS = {
+    "csv": {"delimiter": ",", "options": "WITH CSV HEADER"},
+    "tsv": {"delimiter": "\t", "options": r"WITH CSV DELIMITER E'\t' HEADER"},
+}

@@ -26,7 +26,7 @@ WITH views AS (
         FROM mv_other_award_search INNER JOIN awards a ON a.id = mv_other_award_search.award_id
 )
 SELECT
-  views.award_id,
+  DISTINCT views.award_id,
   views.generated_unique_award_id,
     CASE
     WHEN views.type IN ('02', '03', '04', '05', '06', '10', '07', '08', '09', '11') AND views.fain IS NOT NULL THEN views.fain
@@ -50,7 +50,7 @@ SELECT
   views.recipient_id,
   views.recipient_name,
   views.recipient_unique_id,
-  recipient_lookup.recipient_hash,
+  CONCAT(rp.recipient_hash, '-', case when views.parent_recipient_unique_id is null then 'R' else 'C' end) as recipient_hash,
   views.parent_recipient_unique_id,
   views.business_categories,
 
@@ -114,4 +114,6 @@ SELECT
     duns
   FROM recipient_lookup AS rlv
   ) recipient_lookup ON recipient_lookup.duns = views.recipient_unique_id AND views.recipient_unique_id IS NOT NULL
+  LEFT JOIN
+  recipient_profile rp  on recipient_lookup.recipient_hash = rp.recipient_hash
 ORDER BY views.total_obligation DESC NULLS LAST;

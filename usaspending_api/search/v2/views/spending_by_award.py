@@ -104,19 +104,28 @@ class SpendingByAwardVisualizationViewSet(APIView):
         raise_if_award_types_not_valid_subset(self.filters["award_type_codes"], self.is_subaward)
         raise_if_sort_key_not_valid(self.pagination["sort_key"], self.fields, self.is_subaward)
         if self.filters.get("elasticsearch"):
-            results, total = self.elasticsearch_response(json_request)
-            return Response(
-                self.populate_response(
-                    results, has_next=total - self.pagination["lower_bound"] > self.pagination["limit"]
+            success, results, total = self.elasticsearch_response(json_request)
+            if success:
+                results = self.annotate_recipients(results)
+                return Response(
+                    self.populate_response(
+                        results, has_next=total - self.pagination["lower_bound"] > self.pagination["limit"]
+                    )
                 )
-            )
+            else:
+                return Response("There was an Error connecting to the elasticsearch cluster.")
         return Response(self.create_response(self.construct_queryset()))
 
+    def annotate_recipients(self, results):
+        for result in results:
+            if result["recipient_id"] == "-C" or result["recipient_id"] == '-R':
+                result["recipient_id"] = None
+        return results
     def elasticsearch_response(self, request_data):
         lower_limit = self.pagination["lower_bound"]
         limit = self.pagination["limit"]
         success, response, total = search_awards(request_data, lower_limit, limit)
-        return response, total
+        return success, response, total
 
     @staticmethod
     def validate_request_data(request_data):
