@@ -1,6 +1,3 @@
--- "create or replace view" does not like it when columns are added
-DROP VIEW transaction_delta_view;
-
 -- All need to be present in the Postgres DB if data needs to be retrieved for Elasticsearch
 CREATE OR REPLACE VIEW transaction_delta_view AS
 SELECT
