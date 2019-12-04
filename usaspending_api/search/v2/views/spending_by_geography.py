@@ -389,9 +389,9 @@ class SpendingByGeographyVisualizationViewSet(APIView):
         return results
 
     def combine_geo_layer_filters_with_search_filters(self) -> None:
-        '''
+        """
         CURRENTLY DOES NOT WORK WITH LARGER GEO_LAYER_FILTERS
-        '''
+        """
         search_filter_key = None
 
         if self.scope == "place_of_performance":
@@ -415,8 +415,9 @@ class SpendingByGeographyVisualizationViewSet(APIView):
                 )
 
     def query_elasticsearch(self) -> dict:
-        #if self.geo_layer_filters:
-        #    self.combine_geo_layer_filters_with_search_filters()
+        # Makes use of the current filter implementation using Elasticsearch
+        if self.geo_layer_filters:
+            self.combine_geo_layer_filters_with_search_filters()
 
         query = {
             "query": base_awards_query(self.filters, is_for_transactions=True),
@@ -429,5 +430,4 @@ class SpendingByGeographyVisualizationViewSet(APIView):
         results = []
         if hits and hits["hits"]["total"] > 0:
             results = self.parse_elasticsearch_response(hits)
-
-        return list(filter(lambda val: val["shape_code"] in self.geo_layer_filters, results))
+        return results
