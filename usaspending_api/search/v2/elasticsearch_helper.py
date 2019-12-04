@@ -7,6 +7,8 @@ from django.db.models import Q
 
 from usaspending_api.accounts.helpers import TAS_COMPONENT_TO_FIELD_MAPPING
 from usaspending_api.accounts.models import TreasuryAppropriationAccount
+from usaspending_api.accounts.views.federal_accounts_v2 import filter_on
+from usaspending_api.awards.models import FinancialAccountsByAwards
 from usaspending_api.awards.models_matviews import AwardSearchView, UniversalTransactionView
 from usaspending_api.awards.v2.lookups.elasticsearch_lookups import KEYWORD_DATATYPE_FIELDS
 from usaspending_api.awards.v2.lookups.elasticsearch_lookups import INDEX_ALIASES_TO_AWARD_TYPES
@@ -22,6 +24,7 @@ from usaspending_api.awards.v2.lookups.elasticsearch_lookups import (
 )
 from usaspending_api.common.elasticsearch.client import es_client_query, es_client_count
 from usaspending_api.common.exceptions import InvalidParameterException
+from usaspending_api.recipient.models import RecipientProfile
 
 logger = logging.getLogger("console")
 
@@ -319,6 +322,9 @@ def base_awards_query(filters, is_for_transactions=False):
         if key not in key_list:
             raise InvalidParameterException("Invalid filter: " + key + " does not exist.")
 
+        faba_queryset = FinancialAccountsByAwards.objects.filter(award__isnull=False)
+        faba_flag = False
+
         if key == "keywords":
             queries = []
             for v in value:
@@ -400,8 +406,29 @@ def base_awards_query(filters, is_for_transactions=False):
                 }
             )
 
-        # elif key == "recipient_id":
-        #
+        elif key == "recipient_id":
+
+            should = []
+            recipient_hash = value[:-2]
+            if value.endswith("P"):  # For parent types, gather all of the children's transactions
+                parent_duns_rows = RecipientProfile.objects.filter(
+                    recipient_hash=recipient_hash, recipient_level="P"
+                ).values("recipient_unique_id")
+                if len(parent_duns_rows) == 1:
+                    parent_duns = parent_duns_rows[0]["recipient_unique_id"]
+                    should.append({"match": {"parent_recipient_unique_id": parent_duns}})
+                elif len(parent_duns_rows) > 2:
+                    # shouldn't occur
+                    raise InvalidParameterException("Non-unique parent record found in RecipientProfile")
+            else:
+                should.append({"match": {"recipient_hash": value}})
+            query["bool"]["filter"]["bool"].update(
+                {
+                    "should": query["bool"]["filter"]["bool"]["should"] + should,
+                    "minimum_should_match": int(query["bool"]["filter"]["bool"].get("minimum_should_match") or 0) + 1,
+                }
+            )
+
         elif key == "recipient_scope":
             should = []
             for v in value:
@@ -595,6 +622,8 @@ def base_awards_query(filters, is_for_transactions=False):
                     "minimum_should_match": int(query["bool"]["filter"]["bool"].get("minimum_should_match") or 0) + 1,
                 }
             )
+
+
 
     # i am sorry about this
     if len(query["bool"]["filter"]["bool"]["should"]) == 0:
