@@ -148,13 +148,13 @@ def get_business_categories(row, data_type):
             business_category_set.add("native_american_owned_business")
 
         if business_categories_boolean_dict["native_hawaiian_owned_busi"] is True:
-            business_category_set.add("native_hawaiian_owned_business")
+            business_category_set.add("native_hawaiian_organization_owned_firm")
 
         if business_categories_boolean_dict["subcontinent_asian_asian_i"] is True:
             business_category_set.add("subcontinent_asian_indian_american_owned_business")
 
         if business_categories_boolean_dict["tribally_owned_business"] is True:
-            business_category_set.add("tribally_owned_business")
+            business_category_set.add("tribally_owned_firm")
 
         if business_categories_boolean_dict["other_minority_owned_busin"] is True:
             business_category_set.add("other_minority_owned_business")
@@ -168,9 +168,9 @@ def get_business_categories(row, data_type):
                 "black_american_owned_business",
                 "hispanic_american_owned_business",
                 "native_american_owned_business",
-                "native_hawaiian_owned_business",
+                "native_hawaiian_organization_owned_firm",
                 "subcontinent_asian_indian_american_owned_business",
-                "tribally_owned_business",
+                "tribally_owned_firm",
                 "other_minority_owned_business",
             }
         ):
