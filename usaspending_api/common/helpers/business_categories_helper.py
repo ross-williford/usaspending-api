@@ -13,7 +13,7 @@ BUSINESS_CATEGORIES_LOOKUP_DICT = {
     "limited_liability_corporation": "Limited Liability Corporation",
     # Minority Owned Business
     "minority_owned_business": "Minority Owned Business",
-    "alaskan_native_owned_business": "Alaskan Native Corporation Owned Firm",
+    "alaskan_native_corporation_owned_firm": "Alaskan Native Corporation Owned Firm",
     "american_indian_owned_business": "American Indian Owned Business",
     "asian_pacific_american_owned_business": "Asian Pacific American Owned Business",
     "black_american_owned_business": "Black American Owned Business",
@@ -48,7 +48,7 @@ BUSINESS_CATEGORIES_LOOKUP_DICT = {
     "community_developed_corporation_owned_firm": "Community Developed Corporation Owned Firm",
     "us_owned_business": "U.S.-Owned Business",
     "foreign_owned_and_us_located_business": "Foreign-Owned and U.S.-Incorporated Business",
-    "foreign_owned_and_located_business": "Foreign Owned and Located",
+    "foreign_owned": "Foreign Owned and Located",
     "foreign_government": "Foreign Government",
     "international_organization": "International Organization",
     "domestic_shelter": "Domestic Shelter",

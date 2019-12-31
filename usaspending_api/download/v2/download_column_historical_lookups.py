@@ -327,8 +327,14 @@ query_paths = {
                     "cost_accounting_standards_clause",
                     "award__latest_transaction__contract_data__cost_accounting_stand_desc",
                 ),
-                ("government_furnished_property_code", "award__latest_transaction__contract_data__government_furnished_prope"),
-                ("government_furnished_property", "award__latest_transaction__contract_data__government_furnished_prope"),
+                (
+                    "government_furnished_property_code",
+                    "award__latest_transaction__contract_data__government_furnished_prope",
+                ),
+                (
+                    "government_furnished_property",
+                    "award__latest_transaction__contract_data__government_furnished_prope",
+                ),
                 ("sea_transportation_code", "award__latest_transaction__contract_data__sea_transportation"),
                 ("sea_transportation", "award__latest_transaction__contract_data__sea_transportation_desc"),
                 ("consolidated_contract_code", "award__latest_transaction__contract_data__consolidated_contract"),
@@ -1015,7 +1021,10 @@ query_paths = {
                 ("hispanic_servicing_institution", "transaction__contract_data__hispanic_servicing_institu"),
                 ("receives_contracts", "transaction__contract_data__contracts"),
                 ("receives_financial_assistance", "transaction__contract_data__grants"),
-                ("receives_contracts_and_financial_assistance", "transaction__contract_data__receives_contracts_and_gra"),
+                (
+                    "receives_contracts_and_financial_assistance",
+                    "transaction__contract_data__receives_contracts_and_gra",
+                ),
                 ("airport_authority", "transaction__contract_data__airport_authority"),
                 ("council_of_governments", "transaction__contract_data__council_of_governments"),
                 ("housing_authorities_public_tribal", "transaction__contract_data__housing_authorities_public"),

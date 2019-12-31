@@ -178,7 +178,7 @@ begin
 -- MINORITY BUSINESS
     if alaskan_native_owned_corpo IS TRUE
     then
-        bc_arr := bc_arr || array['alaskan_native_owned_business'];
+        bc_arr := bc_arr || array['alaskan_native_corporation_owned_firm'];
     end if;
 
     if american_indian_owned_busi IS TRUE
@@ -227,7 +227,7 @@ begin
     end if;
 
     if minority_owned_business IS TRUE or (bc_arr && array[
-        'alaskan_native_owned_business',
+        'alaskan_native_corporation_owned_firm',
         'american_indian_owned_business',
         'asian_pacific_american_owned_business',
         'black_american_owned_business',
@@ -362,7 +362,7 @@ begin
     -- Foreign-Owned Business Not Incorporated in the U.S.
     if domestic_or_foreign_entity = 'D' or foreign_owned_and_located IS TRUE
     then
-        bc_arr := bc_arr || array['foreign_owned_and_located_business'];
+        bc_arr := bc_arr || array['foreign_owned'];
     end if;
 
     if foreign_government IS TRUE
@@ -405,7 +405,7 @@ begin
         'community_developed_corporation_owned_firm',
         'us_owned_business',
         'foreign_owned_and_us_located_business',
-        'foreign_owned_and_located_business',
+        'foreign_owned',
         'foreign_government',
         'international_organization',
         'domestic_shelter',

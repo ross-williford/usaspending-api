@@ -130,7 +130,7 @@ def get_business_categories(row, data_type):
 
         # MINORITY BUSINESS
         if business_categories_boolean_dict["alaskan_native_owned_corpo"] is True:
-            business_category_set.add("alaskan_native_owned_business")
+            business_category_set.add("alaskan_native_corporation_owned_firm")
 
         if business_categories_boolean_dict["american_indian_owned_busi"] is True:
             business_category_set.add("american_indian_owned_business")
@@ -162,7 +162,7 @@ def get_business_categories(row, data_type):
         if business_categories_boolean_dict["minority_owned_business"] is True or (
             business_category_set
             & {
-                "alaskan_native_owned_business",
+                "alaskan_native_corporation_owned_firm",
                 "american_indian_owned_business",
                 "asian_pacific_american_owned_business",
                 "black_american_owned_business",
@@ -259,7 +259,7 @@ def get_business_categories(row, data_type):
             row.get("domestic_or_foreign_entity") == "D"
             or business_categories_boolean_dict["foreign_owned_and_located"] is True
         ):
-            business_category_set.add("foreign_owned_and_located_business")
+            business_category_set.add("foreign_owned")
 
         if business_categories_boolean_dict["foreign_government"] is True:
             business_category_set.add("foreign_government")
