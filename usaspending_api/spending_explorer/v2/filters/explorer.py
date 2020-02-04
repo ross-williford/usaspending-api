@@ -128,22 +128,19 @@ class Explorer(object):
     def agency(self):
         # Funding Top Tier Agencies Querysets
         queryset = (
-            self.queryset.filter(treasury_account__funding_toptier_agency__isnull=False)
-            .annotate(
+            self.queryset.annotate(
                 type=Value("agency", output_field=CharField()),
                 name=Case(
                     When(
-                        treasury_account__funding_toptier_agency__toptier_code__in=DOD_ARMED_FORCES_CGAC,
+                        treasury_account__reporting_agency_name__in=DOD_ARMED_FORCES_CGAC,
                         then=Value("Department of Defense"),
                     ),
-                    default=F("treasury_account__funding_toptier_agency__name"),
+                    default=F("treasury_account__reporting_agency_name"),
                 ),
+                ## THIS PART IS NOT CORRECT BUSINESS LOGIC. FOR DEMONSTRATION ONLY
                 code=Case(
-                    When(
-                        treasury_account__funding_toptier_agency__toptier_code__in=DOD_ARMED_FORCES_CGAC,
-                        then=Value(DOD_CGAC),
-                    ),
-                    default=F("treasury_account__funding_toptier_agency__toptier_code"),
+                    When(treasury_account__reporting_agency_name__in=DOD_ARMED_FORCES_CGAC, then=Value(DOD_CGAC),),
+                    default=F("treasury_account__agency_id"),
                 ),
             )
             .values("type", "name", "code")
@@ -152,7 +149,7 @@ class Explorer(object):
         )
 
         for element in queryset:
-            element["id"] = self.agency_ids[element["code"]]
+            element["id"] = element["code"]
 
         return queryset
 
