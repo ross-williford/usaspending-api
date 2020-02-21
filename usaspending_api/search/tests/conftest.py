@@ -4,6 +4,8 @@ from usaspending_api.search.tests.integration.spending_by_category.spending_test
     basic_award,
     agencies_with_subagencies,
     subagency_award,
+    naics,
+    naics_award,
 )
 
 
@@ -13,4 +15,6 @@ __all__ = [
     "basic_award",
     "agencies_with_subagencies",
     "subagency_award",
+    "naics",
+    "naics_award",
 ]

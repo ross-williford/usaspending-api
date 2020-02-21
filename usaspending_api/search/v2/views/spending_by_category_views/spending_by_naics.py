@@ -46,9 +46,9 @@ class NaicsView(BaseSpendingByCategoryViewSet, metaclass=ABCMeta):
         sum_bucket_sort = sum_aggregations["sum_bucket_sort"]
 
         # Apply the aggregations to TransactionSearch object
-        search.aggs.bucket("group_by_agency_name", group_by_naic_code)
-        search.aggs["group_by_agency_name"].bucket("group_by_agency_abbreviation", group_by_naic_description)
-        search.aggs["group_by_agency_name"].metric("sum_as_cents", sum_as_cents).pipeline(
+        search.aggs.bucket("group_by_naic_code", group_by_naic_code)
+        search.aggs["group_by_naic_code"].bucket("group_by_naic_description", group_by_naic_description)
+        search.aggs["group_by_naic_code"].metric("sum_as_cents", sum_as_cents).pipeline(
             "sum_as_dollars", sum_as_dollars
         ).pipeline("sum_bucket_sort", sum_bucket_sort)
 
@@ -56,9 +56,9 @@ class NaicsView(BaseSpendingByCategoryViewSet, metaclass=ABCMeta):
 
     def build_elasticsearch_result(self, response: dict) -> List[dict]:
         results = []
-        agency_name_buckets = response.get("group_by_agency_name", {}).get("buckets", [])
+        agency_name_buckets = response.get("group_by_naic_code", {}).get("buckets", [])
         for bucket in agency_name_buckets:
-            naics_description_buckets = bucket.get("group_by_agency_abbreviation", {}).get("buckets", [])
+            naics_description_buckets = bucket.get("group_by_naic_description", {}).get("buckets", [])
             results.append(
                 {
                     "amount": bucket.get("sum_as_dollars", {"value": 0})["value"],
@@ -71,7 +71,6 @@ class NaicsView(BaseSpendingByCategoryViewSet, metaclass=ABCMeta):
 
     def query_django(self, base_queryset: QuerySet):
         if self.subawards:
-            # TODO: get subaward NAICS from Broker
             self.raise_not_implemented()
         django_filters = {"naics_code__isnull": False}
         django_values = ["naics_code", "naics_description"]

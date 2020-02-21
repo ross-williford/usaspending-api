@@ -46,6 +46,30 @@ def subagency_award(db, agencies_with_subagencies):
     )
 
 
+@pytest.fixture
+def naics(db):
+    mommy.make("references.NAICS", code=1, description="one")
+    mommy.make("references.NAICS", code=2, description="two")
+
+
+@pytest.fixture
+def naics_award(db, basic_agencies, naics):
+    mommy.make("awards.Award", id=21, latest_transaction_id=234)
+
+    mommy.make(
+        "awards.TransactionNormalized",
+        id=234,
+        award_id=2,
+        awarding_agency_id=1001,
+        funding_agency_id=1004,
+        federal_action_obligation=10,
+        action_date="2010-01-02",
+    )
+    mommy.make(
+        "awards.TransactionFPDS", transaction_id=234, naics=1,
+    )
+
+
 def _setup_agency(id, subtiers, special_name):
     mommy.make(
         "references.ToptierAgency",
