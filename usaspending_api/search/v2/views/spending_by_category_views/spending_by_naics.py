@@ -27,14 +27,18 @@ class NaicsView(BaseSpendingByCategoryViewSet, metaclass=ABCMeta):
         search = TransactionSearch().filter(filter_query)
 
         # Define all aggregations needed to build the response
-        group_by_agency_name = A(
+        group_by_naic_code = A(
             "terms",
-            field=f"{self.agency_type.value}_agency_name.keyword",
+            field=f"naics_code",
             include={"partition": curr_partition, "num_partitions": num_partitions},
             size=size,
         )
-        group_by_agency_abbreviation = A("terms", field=f"{self.agency_type.value}_agency_abbreviation.keyword")
-        group_by_agency_id = A("terms", field=f"{self.agency_type.value}_agency_id")
+        group_by_naic_description = A(
+            "terms",
+            field=f"naics_description",
+            include={"partition": curr_partition, "num_partitions": num_partitions},
+            size=size,
+        )
 
         sum_aggregations = get_sum_aggregations("generated_pragmatic_obligation", self.pagination)
         sum_as_cents = sum_aggregations["sum_as_cents"]
@@ -42,9 +46,8 @@ class NaicsView(BaseSpendingByCategoryViewSet, metaclass=ABCMeta):
         sum_bucket_sort = sum_aggregations["sum_bucket_sort"]
 
         # Apply the aggregations to TransactionSearch object
-        search.aggs.bucket("group_by_agency_name", group_by_agency_name)
-        search.aggs["group_by_agency_name"].bucket("group_by_agency_abbreviation", group_by_agency_abbreviation)
-        search.aggs["group_by_agency_name"].bucket("group_by_agency_id", group_by_agency_id)
+        search.aggs.bucket("group_by_agency_name", group_by_naic_code)
+        search.aggs["group_by_agency_name"].bucket("group_by_agency_abbreviation", group_by_naic_description)
         search.aggs["group_by_agency_name"].metric("sum_as_cents", sum_as_cents).pipeline(
             "sum_as_dollars", sum_as_dollars
         ).pipeline("sum_bucket_sort", sum_bucket_sort)
@@ -55,14 +58,13 @@ class NaicsView(BaseSpendingByCategoryViewSet, metaclass=ABCMeta):
         results = []
         agency_name_buckets = response.get("group_by_agency_name", {}).get("buckets", [])
         for bucket in agency_name_buckets:
-            agency_abbreviation_buckets = bucket.get("group_by_agency_abbreviation", {}).get("buckets", [])
-            agency_id_buckets = bucket.get("group_by_agency_id", {}).get("buckets", [])
+            naics_description_buckets = bucket.get("group_by_agency_abbreviation", {}).get("buckets", [])
             results.append(
                 {
                     "amount": bucket.get("sum_as_dollars", {"value": 0})["value"],
-                    "name": bucket.get("key"),
-                    "code": agency_abbreviation_buckets[0].get("key") if len(agency_abbreviation_buckets) > 0 else None,
-                    "id": int(agency_id_buckets[0].get("key")) if len(agency_id_buckets) > 0 else None,
+                    "code": bucket.get("key"),
+                    "name": naics_description_buckets[0].get("key") if len(naics_description_buckets) > 0 else None,
+                    "id": None,
                 }
             )
         return results
