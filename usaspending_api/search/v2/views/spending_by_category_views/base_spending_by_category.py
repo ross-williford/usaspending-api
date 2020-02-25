@@ -1,6 +1,7 @@
 import copy
 import itertools
 import logging
+
 from abc import ABCMeta, abstractmethod
 from dataclasses import dataclass
 from typing import List
@@ -44,7 +45,7 @@ class BaseSpendingByCategoryViewSet(APIView, metaclass=ABCMeta):
     category: Category
     elasticsearch: bool
     filters: dict
-    obligation_column: int
+    obligation_column: str
     pagination: Pagination
     subawards: bool
 
@@ -127,7 +128,7 @@ class BaseSpendingByCategoryViewSet(APIView, metaclass=ABCMeta):
         This will allow for any number of results to be retrieved regardless of the number of buckets.
         """
         bucket_count = get_number_of_unique_terms(filter_query, self.category.primary_field)
-        num_partitions = (bucket_count // size) + 1
+        num_partitions = ((bucket_count - 1) // size) + 1
 
         for partition in range(num_partitions):
             search = self.build_elasticsearch_search_with_aggregations(filter_query, partition, num_partitions, size)
