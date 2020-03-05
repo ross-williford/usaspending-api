@@ -80,6 +80,16 @@ SELECT
   SAA.subtier_code AS awarding_subtier_agency_code,
   SFA.subtier_code AS funding_subtier_agency_code,
 
+  JSONB_BUILD_OBJECT(
+    'cfda_id', CFDA.id,
+    'cfda_number', UTM.cfda_number,
+    'cfda_title', UTM.cfda_title
+  ) as cfda_info_with_ordinals,
+  JSONB_BUILD_OBJECT(
+    'cfda_id', CFDA.id,
+    'cfda_number', UTM.cfda_number,
+    'cfda_title', UTM.cfda_title
+  ) as cfda_info_without_ordinals,
   CFDA.id AS cfda_id,
   UTM.cfda_number,
   UTM.cfda_title,

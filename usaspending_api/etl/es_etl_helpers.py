@@ -83,6 +83,8 @@ VIEW_COLUMNS = [
     "funding_toptier_agency_code",
     "awarding_subtier_agency_code",
     "funding_subtier_agency_code",
+    "cfda_info_with_ordinals",
+    "cfda_info_without_ordinals",
     "cfda_id",
     "cfda_number",
     "cfda_title",
@@ -268,6 +270,13 @@ def convert_postgres_json_array_as_string_to_list(json_array_as_string: str) -> 
     return result
 
 
+def convert_postgres_json_as_string_to_dict(json_as_string: str) -> Optional[list]:
+    if json_as_string is None:
+        return None
+    single_json = json.loads(json_as_string)
+    return json.dumps(single_json, sort_keys=True)
+
+
 def process_guarddog(process_list):
     """
         pass in a list of multiprocess Process objects.
@@ -402,6 +411,8 @@ def csv_chunk_gen(filename, chunksize, job_id, awards):
         "business_categories": convert_postgres_array_as_string_to_list,
         "treasury_accounts": convert_postgres_json_array_as_string_to_list,
         "federal_accounts": convert_postgres_json_array_as_string_to_list,
+        "cfda_info_with_ordinals": convert_postgres_json_as_string_to_dict,
+        "cfda_info_without_ordinals": convert_postgres_json_as_string_to_dict,
     }
     # Panda's data type guessing causes issues for Elasticsearch. Explicitly cast using dictionary
     dtype = {k: str for k in VIEW_COLUMNS if k not in converters}
